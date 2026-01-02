@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaMix Hub</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="app-header">
+            <h1>MediaMix Hub</h1>
+            <p>Manage your media files with ease</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section class="upload-section" id="uploadSection">
+            <h2>Upload Media</h2>
+            <form class="upload-form" id="uploadForm">
+                <div class="form-group">
+                    <label for="fileInput">Select File:</label>
+                    <input 
+                        type="file" 
+                        id="fileInput" 
+                        accept="image/*,video/*,audio/*"
+                        class="file-input"
+                    >
+                    <div class="file-info" id="fileInfo"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="descriptionInput">Description:</label>
+                    <textarea 
+                        id="descriptionInput" 
+                        class="description-input"
+                        placeholder="Enter a description for your media..."
+                        maxlength="500"
+                        rows="3"
+                    ></textarea>
+                    <div class="char-count" id="charCount">0/500</div>
+                </div>
+                
+                <button type="submit" class="upload-btn" id="uploadBtn">
+                    <span class="btn-text">Upload Media</span>
+                    <span class="loading-spinner" id="uploadSpinner"></span>
+                </button>
+                
+                <div class="error-message" id="uploadError"></div>
+                <div class="success-message" id="uploadSuccess"></div>
+            </form>
+        </section>
+
+        <!-- Gallery Section -->
+        <section class="gallery-section" id="gallerySection">
+            <div class="gallery-header">
+                <h2>Media Gallery</h2>
+                <div class="gallery-stats" id="galleryStats"></div>
+            </div>
+            
+            <div class="gallery-container" id="galleryContainer">
+                <!-- Media cards will be dynamically inserted here -->
+            </div>
+            
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">📁</div>
+                <h3>No media files yet</h3>
+                <p>Upload your first image, video, or audio file to get started!</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Modal (hidden by default) -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Description</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea 
+                    id="editDescriptionInput" 
+                    class="edit-description-input"
+                    maxlength="500"
+                    rows="4"
+                ></textarea>
+                <div class="char-count" id="editCharCount">0/500</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelEdit">Cancel</button>
+                <button class="btn btn-primary" id="saveEdit">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Modal (hidden by default) -->
+    <div class="modal-overlay" id="viewModal">
+        <div class="modal-content view-modal-content">
+            <div class="modal-header">
+                <h3 id="viewModalTitle">View Media</h3>
+                <button class="modal-close" id="viewModalClose">&times;</button>
+            </div>
+            <div class="modal-body view-modal-body">
+                <div class="media-preview" id="mediaPreview">
+                    <!-- Media content will be inserted here -->
+                </div>
+                <div class="media-details" id="mediaDetails">
+                    <!-- Media details will be inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeView">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
