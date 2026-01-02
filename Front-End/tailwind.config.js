@@ -1,9 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    "./*.html",
+    "./*.js",
+    "./src/**/*.{html,js}"
   ],
   theme: {
     extend: {
@@ -66,7 +66,6 @@ module.exports = {
         'fade-in-up': 'fadeInUp 0.6s ease-out',
         'slide-in': 'slideIn 0.3s ease-out',
         'bounce-gentle': 'bounceGentle 2s infinite',
-        'pulse-gentle': 'pulseGentle 2s infinite',
       },
       keyframes: {
         fadeIn: {
@@ -84,10 +83,6 @@ module.exports = {
         bounceGentle: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-5px)' },
-        },
-        pulseGentle: {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.8' },
         }
       },
       backdropBlur: {

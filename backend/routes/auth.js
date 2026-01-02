@@ -9,10 +9,10 @@ const router = express.Router();
 // Register
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { username, email, password } = req.body;
 
         // Validation
-        if (!name || !email || !password) {
+        if (!username || !email || !password) {
             return res.status(400).json({
                 success: false,
                 message: 'Please provide all required fields'
@@ -26,12 +26,30 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        // Check if user exists
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
-        if (existingUser) {
+        // Validate username format
+        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+        if (!usernameRegex.test(username)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username must be 3-20 characters long and contain only letters, numbers, and underscores'
+            });
+        }
+
+        // Check if user exists with email
+        const existingUserByEmail = await User.findOne({ email: email.toLowerCase() });
+        if (existingUserByEmail) {
             return res.status(400).json({
                 success: false,
                 message: 'User already exists with this email'
+            });
+        }
+
+        // Check if user exists with username
+        const existingUserByUsername = await User.findOne({ username: username.toLowerCase() });
+        if (existingUserByUsername) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username is already taken'
             });
         }
 
@@ -41,7 +59,8 @@ router.post('/register', async (req, res) => {
 
         // Create user
         const user = new User({
-            name: name.trim(),
+            username: username.toLowerCase().trim(),
+            name: username.trim(), // Use username as display name initially
             email: email.toLowerCase().trim(),
             password: hashedPassword
         });
@@ -61,6 +80,7 @@ router.post('/register', async (req, res) => {
             token,
             user: {
                 id: user._id,
+                username: user.username,
                 name: user.name,
                 email: user.email,
                 createdAt: user.createdAt
@@ -69,6 +89,17 @@ router.post('/register', async (req, res) => {
 
     } catch (error) {
         console.error('Registration error:', error);
+        
+        // Handle duplicate key errors
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern)[0];
+            const message = field === 'email' ? 'Email is already registered' : 'Username is already taken';
+            return res.status(400).json({
+                success: false,
+                message
+            });
+        }
+        
         res.status(500).json({
             success: false,
             message: 'Server error during registration'
@@ -79,22 +110,22 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { identifier, password } = req.body;
 
         // Validation
-        if (!email || !password) {
+        if (!identifier || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide email and password'
+                message: 'Please provide username/email and password'
             });
         }
 
-        // Find user
-        const user = await User.findOne({ email: email.toLowerCase() });
+        // Find user by email or username
+        const user = await User.findByIdentifier(identifier).select('+password');
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid email or password'
+                message: 'Invalid credentials'
             });
         }
 
@@ -103,7 +134,7 @@ router.post('/login', async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid email or password'
+                message: 'Invalid credentials'
             });
         }
 
@@ -124,6 +155,7 @@ router.post('/login', async (req, res) => {
             token,
             user: {
                 id: user._id,
+                username: user.username,
                 name: user.name,
                 email: user.email,
                 lastLogin: user.lastLogin,
@@ -156,6 +188,7 @@ router.get('/profile', protect, async (req, res) => {
             success: true,
             user: {
                 id: user._id,
+                username: user.username,
                 name: user.name,
                 email: user.email,
                 lastLogin: user.lastLogin,
@@ -222,6 +255,7 @@ router.put('/profile', protect, async (req, res) => {
             message: 'Profile updated successfully',
             user: {
                 id: user._id,
+                username: user.username,
                 name: user.name,
                 email: user.email,
                 lastLogin: user.lastLogin,

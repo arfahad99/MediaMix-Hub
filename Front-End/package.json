@@ -4,9 +4,11 @@
   "description": "Frontend for MediaMix Hub - A modern media management application",
   "main": "index.html",
   "scripts": {
-    "start": "live-server --port=3000 --host=localhost --open=/login.html",
-    "dev": "live-server --port=3000 --host=localhost --open=/login.html --watch=.",
-    "build": "echo 'No build process needed for vanilla JS'"
+    "start": "npm run build-css && concurrently \"npm run watch-css\" \"live-server --port=3000 --host=localhost --open=/login-backend.html\"",
+    "dev": "npm run build-css && concurrently \"npm run watch-css\" \"live-server --port=3000 --host=localhost --open=/login-backend.html --watch=.\"",
+    "build": "npm run build-css",
+    "build-css": "tailwindcss -i ./src/input.css -o ./dist/styles.css --watch=false",
+    "watch-css": "tailwindcss -i ./src/input.css -o ./dist/styles.css --watch"
   },
   "keywords": [
     "media",
@@ -18,9 +20,8 @@
   "author": "MediaMix Hub Team",
   "license": "MIT",
   "devDependencies": {
-    "live-server": "^1.2.2"
-  },
-  "dependencies": {
-    "@auth0/auth0-spa-js": "^2.11.0"
+    "live-server": "^1.2.2",
+    "tailwindcss": "^3.4.0",
+    "concurrently": "^8.2.2"
   }
 }

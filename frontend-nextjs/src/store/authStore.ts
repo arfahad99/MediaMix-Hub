@@ -1,35 +1,28 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User } from '@/types';
-import api from '@/lib/api';
+import { AuthStore, User, RegisterFormData } from '@/types';
+import { apiClient } from '@/lib/api';
+import { isTokenExpired } from '@/lib/utils';
 
-interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
-  loadUser: () => Promise<void>;
-  updateUser: (user: User) => void;
-}
-
-export const useAuthStore = create<AuthState>()(
+export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
       isLoading: false,
 
-      login: async (email: string, password: string) => {
+      login: async (identifier: string, password: string) => {
         set({ isLoading: true });
         try {
-          const response = await api.login(email, password);
-          if (response.success && response.user) {
+          const response = await apiClient.login({ identifier, password });
+          
+          if (response.success && response.token && response.user) {
             set({
               user: response.user,
+              token: response.token,
               isAuthenticated: true,
-              isLoading: false,
+              isLoading: false
             });
           } else {
             throw new Error(response.message || 'Login failed');
@@ -40,15 +33,17 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      register: async (name: string, email: string, password: string) => {
+      register: async (userData: RegisterFormData) => {
         set({ isLoading: true });
         try {
-          const response = await api.register(name, email, password);
-          if (response.success && response.user) {
+          const response = await apiClient.register(userData);
+          
+          if (response.success && response.token && response.user) {
             set({
               user: response.user,
+              token: response.token,
               isAuthenticated: true,
-              isLoading: false,
+              isLoading: false
             });
           } else {
             throw new Error(response.message || 'Registration failed');
@@ -60,55 +55,57 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        api.logout();
+        apiClient.logout();
         set({
           user: null,
+          token: null,
           isAuthenticated: false,
-          isLoading: false,
+          isLoading: false
         });
       },
 
-      loadUser: async () => {
-        if (!api.isAuthenticated()) {
-          set({ isAuthenticated: false, user: null });
+      checkAuth: async () => {
+        const { token } = get();
+        
+        if (!token || isTokenExpired(token)) {
+          get().logout();
           return;
         }
 
         set({ isLoading: true });
         try {
-          const response = await api.getProfile();
+          const response = await apiClient.getProfile();
+          
           if (response.success && response.user) {
             set({
               user: response.user,
               isAuthenticated: true,
-              isLoading: false,
+              isLoading: false
             });
           } else {
-            set({
-              user: null,
-              isAuthenticated: false,
-              isLoading: false,
-            });
+            get().logout();
           }
         } catch (error) {
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-          });
+          console.error('Auth check failed:', error);
+          get().logout();
         }
       },
 
-      updateUser: (user: User) => {
+      setUser: (user: User) => {
         set({ user });
       },
+
+      setToken: (token: string) => {
+        set({ token, isAuthenticated: true });
+      }
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({
         user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
+        token: state.token,
+        isAuthenticated: state.isAuthenticated
+      })
     }
   )
 );

@@ -15,9 +15,11 @@ A modern, full-stack media management application with a beautiful, creative fro
 - **Tag Management**: Add and manage tags for better organization
 
 ### 🔐 Authentication System
-- **Secure Login/Register**: JWT-based authentication
+- **Secure Login/Register**: JWT-based authentication with username/email support
 - **User Profiles**: Manage user information and preferences
 - **Session Management**: Automatic token refresh and secure logout
+- **Password Security**: Bcrypt hashing with visibility toggles
+- **Flexible Login**: Login with either username or email address
 
 ### 🚀 Backend Features
 - **RESTful API**: Clean, well-documented API endpoints
@@ -152,38 +154,46 @@ A modern, full-stack media management application with a beautiful, creative fro
 
 ```
 mediamix-hub/
-├── Front-End/                 # Frontend application
-│   ├── index.html            # Main application page
-│   ├── login.html            # Login page
-│   ├── styles.css            # Main styles
-│   ├── auth-styles.css       # Authentication styles
-│   ├── app.js                # Main application logic
-│   ├── auth.js               # Authentication logic
-│   └── package.json          # Frontend dependencies
-├── backend/                   # Backend API
-│   ├── config/               # Configuration files
-│   │   └── database.js       # Database connection
-│   ├── middleware/           # Express middleware
-│   │   ├── auth.js          # Authentication middleware
-│   │   ├── upload.js        # File upload middleware
-│   │   └── errorHandler.js  # Error handling middleware
-│   ├── models/              # Database models
-│   │   ├── User.js          # User model
-│   │   └── Media.js         # Media model
-│   ├── routes/              # API routes
-│   │   ├── auth.js          # Authentication routes
-│   │   ├── media.js         # Media management routes
-│   │   └── user.js          # User management routes
-│   ├── uploads/             # File storage directory
-│   ├── server.js            # Main server file
-│   ├── package.json         # Backend dependencies
-│   └── .env                 # Environment variables
-├── .kiro/                    # Kiro specifications
-│   └── specs/
-│       └── media-mix-hub/
-├── start-backend.bat         # Windows backend startup script
-├── start-frontend.bat        # Windows frontend startup script
-└── README.md                # This file
+├── docs/                     # 📚 All documentation
+│   ├── README.md            # Main project documentation
+│   ├── AZURE_SETUP.md       # Azure Cosmos DB setup guide
+│   ├── LOCAL_MONGODB_SETUP.md # Local MongoDB setup guide
+│   ├── design.md            # Project design specifications
+│   ├── spec-requirements.md # Project requirements
+│   └── spec-tasks.md        # Project tasks
+├── Front-End/               # 🎨 Frontend application
+│   ├── index-backend.html   # Main application page (backend version)
+│   ├── login-backend.html   # Login page (backend version)
+│   ├── app-backend.js       # Main application logic (backend version)
+│   ├── auth-backend.js      # Authentication logic (backend version)
+│   ├── styles.css           # Main styles
+│   ├── auth-styles.css      # Authentication styles
+│   ├── data-models.js       # Data models and validation
+│   ├── mock-backend.js      # Mock backend for testing
+│   └── package.json         # Frontend dependencies
+├── backend/                 # 🚀 Backend API
+│   ├── config/             # Configuration files
+│   │   └── database.js     # Database connection
+│   ├── middleware/         # Express middleware
+│   │   ├── auth.js        # Authentication middleware
+│   │   ├── upload.js      # File upload middleware
+│   │   └── errorHandler.js # Error handling middleware
+│   ├── models/            # Database models
+│   │   ├── User.js        # User model
+│   │   └── Media.js       # Media model
+│   ├── routes/            # API routes
+│   │   ├── auth.js        # Authentication routes
+│   │   ├── media.js       # Media management routes
+│   │   └── user.js        # User management routes
+│   ├── uploads/           # File storage directory
+│   ├── server.js          # Main server file
+│   ├── package.json       # Backend dependencies
+│   └── .env              # Environment variables
+├── frontend-nextjs/        # ⚛️ Next.js version (alternative)
+├── frontend-react-native/  # 📱 React Native version (alternative)
+├── start-backend.bat      # 🚀 Windows backend startup script
+├── start-frontend.bat     # 🎨 Windows frontend startup script
+└── .kiro/                 # 🤖 Kiro specifications
 ```
 
 ## 🔧 API Endpoints

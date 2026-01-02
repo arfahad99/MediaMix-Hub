@@ -3,6 +3,16 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     // Basic user information
+    username: {
+        type: String,
+        required: [true, 'Username is required'],
+        unique: true,
+        trim: true,
+        lowercase: true,
+        minlength: [3, 'Username must be at least 3 characters long'],
+        maxlength: [20, 'Username cannot exceed 20 characters'],
+        match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores']
+    },
     name: {
         type: String,
         required: [true, 'Name is required'],
@@ -159,6 +169,7 @@ userSchema.virtual('isStorageFull').get(function() {
 
 // Indexes optimized for Azure Cosmos DB
 userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ username: 1 }, { unique: true });
 userSchema.index({ auth0Id: 1 }, { sparse: true, unique: true });
 userSchema.index({ userId: 1 });
 userSchema.index({ createdAt: -1 });
@@ -226,6 +237,21 @@ userSchema.methods.decrementMediaCount = async function() {
 // Static methods
 userSchema.statics.findByEmail = function(email) {
     return this.findOne({ email: email.toLowerCase() });
+};
+
+userSchema.statics.findByUsername = function(username) {
+    return this.findOne({ username: username.toLowerCase() });
+};
+
+userSchema.statics.findByIdentifier = function(identifier) {
+    // Check if identifier is email or username
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+    
+    if (isEmail) {
+        return this.findOne({ email: identifier.toLowerCase() });
+    } else {
+        return this.findOne({ username: identifier.toLowerCase() });
+    }
 };
 
 userSchema.statics.getActiveUsers = function() {

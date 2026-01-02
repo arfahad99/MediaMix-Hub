@@ -1,28 +1,61 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthStore } from '@/store/authStore';
+import { useMediaStore } from '@/store/mediaStore';
+import Layout from '@/components/layout/Layout';
+import WelcomeSection from '@/components/sections/WelcomeSection';
+import StatsSection from '@/components/sections/StatsSection';
+import UploadSection from '@/components/sections/UploadSection';
+import GallerySection from '@/components/sections/GallerySection';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
-export default function Home() {
+export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const { loadMedia, loadStats, items } = useMediaStore();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated) {
-        router.push('/dashboard');
-      } else {
-        router.push('/auth/login');
-      }
+    if (!authLoading && !isAuthenticated) {
+      router.push('/auth/login');
+      return;
     }
-  }, [isAuthenticated, isLoading, router]);
+
+    if (isAuthenticated) {
+      // Load initial data
+      loadMedia();
+      loadStats();
+    }
+  }, [isAuthenticated, authLoading, router, loadMedia, loadStats]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
+
+  const hasFiles = items.length > 0;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-accent-purple">
-      <div className="text-center text-white">
-        <LoadingSpinner size="lg" className="mx-auto mb-4" />
-        <p className="text-lg">Loading MediaMix Hub...</p>
+    <Layout>
+      <div className="space-y-8">
+        {/* Welcome Section - only show if no files */}
+        {!hasFiles && <WelcomeSection />}
+        
+        {/* Stats Dashboard */}
+        <StatsSection />
+        
+        {/* Upload Section */}
+        <UploadSection />
+        
+        {/* Gallery Section */}
+        <GallerySection />
       </div>
-    </div>
+    </Layout>
   );
 }

@@ -49,6 +49,33 @@
 
     <!-- Main Content -->
     <main class="main-content">
+        <!-- Welcome Section -->
+        <section class="welcome-section">
+            <div class="welcome-container">
+                <div class="welcome-content">
+                    <h1>Welcome to MediaMix Hub</h1>
+                    <p>Your creative media workspace for organizing, managing, and sharing your digital content.</p>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="scrollToUpload()">
+                            <i class="fas fa-upload"></i>
+                            <span>Upload Files</span>
+                        </button>
+                        <button class="quick-action-btn" onclick="scrollToGallery()">
+                            <i class="fas fa-images"></i>
+                            <span>View Gallery</span>
+                        </button>
+                        <button class="quick-action-btn" onclick="showTips()">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Get Tips</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="welcome-illustration">
+                    <i class="fas fa-photo-video"></i>
+                </div>
+            </div>
+        </section>
+
         <!-- Stats Dashboard -->
         <section class="stats-section">
             <div class="stats-container">
@@ -237,15 +264,42 @@
             </div>
             
             <div class="empty-state" id="emptyState">
-                <div class="empty-icon">
-                    <i class="fas fa-folder-open"></i>
+                <div class="empty-content">
+                    <div class="empty-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h3>Ready to get started?</h3>
+                    <p>Upload your first media file to begin organizing your creative content!</p>
+                    
+                    <div class="empty-actions">
+                        <button class="btn btn-primary" onclick="scrollToUpload()">
+                            <i class="fas fa-upload"></i>
+                            Upload Your First File
+                        </button>
+                        <button class="btn btn-secondary" onclick="showDemo()">
+                            <i class="fas fa-play"></i>
+                            Watch Demo
+                        </button>
+                    </div>
+                    
+                    <div class="supported-formats">
+                        <h4>Supported Formats:</h4>
+                        <div class="format-tags">
+                            <span class="format-tag">
+                                <i class="fas fa-image"></i>
+                                Images (JPG, PNG, GIF, WebP)
+                            </span>
+                            <span class="format-tag">
+                                <i class="fas fa-video"></i>
+                                Videos (MP4, WebM, AVI, MOV)
+                            </span>
+                            <span class="format-tag">
+                                <i class="fas fa-music"></i>
+                                Audio (MP3, WAV, OGG, AAC)
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <h3>No media files yet</h3>
-                <p>Upload your first image, video, or audio file to get started!</p>
-                <button class="btn btn-primary">
-                    <i class="fas fa-upload"></i>
-                    Upload First File
-                </button>
             </div>
             
             <div class="loading-state" id="loadingState">
@@ -365,8 +419,143 @@
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- Tips Modal -->
+    <div class="modal" id="tipsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-lightbulb"></i>
+                    MediaMix Hub Tips
+                </h3>
+                <button class="modal-close" onclick="closeTipsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="tips-container">
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-drag-drop"></i>
+                        </div>
+                        <div class="tip-content">
+                            <h4>Drag & Drop Upload</h4>
+                            <p>Simply drag files from your computer directly into the upload area for quick uploading.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="tip-content">
+                            <h4>Organize with Tags</h4>
+                            <p>Add tags to your files to make them easier to find later. Use commas to separate multiple tags.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="tip-content">
+                            <h4>Quick Search</h4>
+                            <p>Use the search box to quickly find files by name, description, or tags.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-filter"></i>
+                        </div>
+                        <div class="tip-content">
+                            <h4>Filter by Type</h4>
+                            <p>Use the filter buttons to show only images, videos, or audio files.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="tip-content">
+                            <h4>Mobile Friendly</h4>
+                            <p>MediaMix Hub works great on mobile devices. Upload and manage files on the go!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeTipsModal()">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
-    <script src="data-models.js"></script>
-    <script src="app-backend.js"></script>
+    <script src="data-models.js?v=20250102"></script>
+    <script src="app-backend.js?v=20250102"></script>
+    
+    <!-- Additional Homepage Scripts -->
+    <script>
+        // Homepage specific functions
+        function scrollToUpload() {
+            document.querySelector('.upload-section').scrollIntoView({ 
+                behavior: 'smooth' 
+            });
+        }
+        
+        function scrollToGallery() {
+            document.querySelector('.gallery-section').scrollIntoView({ 
+                behavior: 'smooth' 
+            });
+        }
+        
+        function showTips() {
+            document.getElementById('tipsModal').classList.add('show');
+        }
+        
+        function closeTipsModal() {
+            document.getElementById('tipsModal').classList.remove('show');
+        }
+        
+        function showDemo() {
+            // For now, just show tips. In the future, this could link to a video demo
+            showTips();
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('tipsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeTipsModal();
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeTipsModal();
+            }
+        });
+        
+        // Auto-hide welcome section after user uploads files
+        function checkWelcomeVisibility() {
+            const welcomeSection = document.querySelector('.welcome-section');
+            const hasFiles = AppState.mediaItems && AppState.mediaItems.length > 0;
+            
+            if (welcomeSection) {
+                welcomeSection.style.display = hasFiles ? 'none' : 'block';
+            }
+        }
+        
+        // Check welcome visibility on page load and after uploads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for app initialization
+            setTimeout(checkWelcomeVisibility, 2000);
+        });
+        
+        // Also check after successful uploads
+        document.addEventListener('mediaUploaded', checkWelcomeVisibility);
+    </script>
 </body>
 </html>

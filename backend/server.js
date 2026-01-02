@@ -9,7 +9,6 @@ require('dotenv').config();
 
 const { connectDB } = require('./config/database');
 const authRoutes = require('./routes/auth');
-const auth0Routes = require('./routes/auth0');
 const mediaRoutes = require('./routes/media');
 const userRoutes = require('./routes/user');
 const errorHandler = require('./middleware/errorHandler');
@@ -72,7 +71,6 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/auth0', auth0Routes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/user', userRoutes);
 

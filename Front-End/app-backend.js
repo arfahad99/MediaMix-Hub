@@ -724,6 +724,9 @@ async function handleUpload(e) {
         // Update application state
         AppState.mediaItems.unshift(...uploadedItems);
         
+        // Dispatch custom event for welcome section update
+        document.dispatchEvent(new CustomEvent('mediaUploaded'));
+        
         // Clear form and update UI
         clearUploadForm();
         await updateStats();
@@ -1252,6 +1255,13 @@ function filterAndSortMedia() {
 }
 
 function renderGallery() {
+    // Hide/show welcome section based on whether user has files
+    const welcomeSection = document.querySelector('.welcome-section');
+    if (welcomeSection) {
+        const hasFiles = AppState.mediaItems && AppState.mediaItems.length > 0;
+        welcomeSection.style.display = hasFiles ? 'none' : 'block';
+    }
+    
     if (AppState.filteredItems.length === 0) {
         showEmptyGalleryState();
         return;
@@ -1265,6 +1275,11 @@ function renderGallery() {
     AppState.filteredItems.forEach((item, index) => {
         const cardElement = createMediaCardElement(item, index);
         fragment.appendChild(cardElement);
+        
+        // Add staggered animation
+        setTimeout(() => {
+            cardElement.classList.add('animate-fade-in-up');
+        }, index * 50);
     });
     
     DOM.galleryContainer.innerHTML = '';
@@ -1626,3 +1641,12 @@ function handleKeyboard(e) {
 window.removeFile = removeFile;
 window.removeTag = removeTag;
 window.removeEditTag = removeEditTag;
+
+// Welcome section visibility check (called from HTML)
+window.checkWelcomeVisibility = function() {
+    const welcomeSection = document.querySelector('.welcome-section');
+    if (welcomeSection) {
+        const hasFiles = AppState.mediaItems && AppState.mediaItems.length > 0;
+        welcomeSection.style.display = hasFiles ? 'none' : 'block';
+    }
+};

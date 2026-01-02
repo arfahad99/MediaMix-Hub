@@ -1,32 +1,46 @@
 import type { AppProps } from 'next/app';
 import { useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
-import { ToastProvider } from '@/components/ui/ToastContainer';
 import '@/styles/globals.css';
 
 export default function App({ Component, pageProps }: AppProps) {
-  const router = useRouter();
-  const { loadUser, isAuthenticated } = useAuthStore();
+  const checkAuth = useAuthStore((state) => state.checkAuth);
 
   useEffect(() => {
-    loadUser();
-  }, [loadUser]);
-
-  useEffect(() => {
-    const publicRoutes = ['/auth/login', '/auth/register'];
-    const isPublicRoute = publicRoutes.includes(router.pathname);
-
-    if (!isAuthenticated && !isPublicRoute) {
-      router.push('/auth/login');
-    } else if (isAuthenticated && isPublicRoute) {
-      router.push('/dashboard');
-    }
-  }, [isAuthenticated, router]);
+    // Check authentication on app load
+    checkAuth();
+  }, [checkAuth]);
 
   return (
-    <ToastProvider>
+    <>
       <Component {...pageProps} />
-    </ToastProvider>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 5000,
+          style: {
+            background: '#fff',
+            color: '#374151',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            border: '1px solid #e5e7eb',
+            borderRadius: '0.75rem',
+            padding: '16px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+    </>
   );
 }

@@ -39,10 +39,10 @@ class AuthAPIClient {
         }
     }
 
-    async login(email, password) {
+    async login(identifier, password) {
         return this.request('/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ identifier, password })
         });
     }
 
@@ -79,14 +79,14 @@ class AuthUI {
         this.registerForm = document.getElementById('registerForm');
 
         // Login form elements
-        this.loginEmail = document.getElementById('loginEmail');
+        this.loginIdentifier = document.getElementById('loginIdentifier');
         this.loginPassword = document.getElementById('loginPassword');
         this.rememberMe = document.getElementById('rememberMe');
         this.loginBtn = document.getElementById('loginBtn');
         this.loginLoader = document.getElementById('loginLoader');
 
         // Register form elements
-        this.registerName = document.getElementById('registerName');
+        this.registerUsername = document.getElementById('registerUsername');
         this.registerEmail = document.getElementById('registerEmail');
         this.registerPassword = document.getElementById('registerPassword');
         this.confirmPassword = document.getElementById('confirmPassword');
@@ -101,6 +101,7 @@ class AuthUI {
         // Password toggles
         this.toggleLoginPassword = document.getElementById('toggleLoginPassword');
         this.toggleRegisterPassword = document.getElementById('toggleRegisterPassword');
+        this.toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
     }
 
     /**
@@ -118,6 +119,7 @@ class AuthUI {
         // Password toggles
         this.toggleLoginPassword?.addEventListener('click', () => this.togglePassword('loginPassword'));
         this.toggleRegisterPassword?.addEventListener('click', () => this.togglePassword('registerPassword'));
+        this.toggleConfirmPassword?.addEventListener('click', () => this.togglePassword('confirmPassword'));
 
         // Social login buttons (mock)
         document.querySelectorAll('.social-btn').forEach(btn => {
@@ -131,6 +133,7 @@ class AuthUI {
     setupFormValidation() {
         // Real-time validation for register form
         this.registerEmail?.addEventListener('blur', () => this.validateEmail());
+        this.registerUsername?.addEventListener('blur', () => this.validateUsername());
         this.registerPassword?.addEventListener('input', () => this.validatePassword());
         this.confirmPassword?.addEventListener('input', () => this.validatePasswordMatch());
     }
@@ -159,10 +162,10 @@ class AuthUI {
     async handleLogin(e) {
         e.preventDefault();
         
-        const email = this.loginEmail?.value.trim();
+        const identifier = this.loginIdentifier?.value.trim();
         const password = this.loginPassword?.value;
 
-        if (!email || !password) {
+        if (!identifier || !password) {
             this.showError('Please fill in all fields.');
             return;
         }
@@ -171,7 +174,7 @@ class AuthUI {
         this.clearMessages();
 
         try {
-            const result = await authAPI.login(email, password);
+            const result = await authAPI.login(identifier, password);
 
             if (result.success && result.token) {
                 // Store token in localStorage
@@ -199,13 +202,13 @@ class AuthUI {
         e.preventDefault();
 
         const userData = {
-            name: this.registerName?.value.trim(),
+            username: this.registerUsername?.value.trim(),
             email: this.registerEmail?.value.trim(),
             password: this.registerPassword?.value,
             confirmPassword: this.confirmPassword?.value
         };
 
-        if (!userData.name || !userData.email || !userData.password || !userData.confirmPassword) {
+        if (!userData.username || !userData.email || !userData.password || !userData.confirmPassword) {
             this.showError('Please fill in all fields.');
             return;
         }
@@ -228,6 +231,11 @@ class AuthUI {
 
         if (!this.isValidEmail(userData.email)) {
             this.showError('Please enter a valid email address.');
+            return;
+        }
+
+        if (!this.isValidUsername(userData.username)) {
+            this.showError('Username must be 3-20 characters long and contain only letters, numbers, and underscores.');
             return;
         }
 
@@ -301,12 +309,34 @@ class AuthUI {
      */
     togglePassword(inputId) {
         const input = document.getElementById(inputId);
-        const toggle = inputId === 'loginPassword' ? this.toggleLoginPassword : this.toggleRegisterPassword;
+        let toggle;
+        
+        if (inputId === 'loginPassword') {
+            toggle = this.toggleLoginPassword;
+        } else if (inputId === 'registerPassword') {
+            toggle = this.toggleRegisterPassword;
+        } else if (inputId === 'confirmPassword') {
+            toggle = this.toggleConfirmPassword;
+        }
         
         if (input && toggle) {
             const isPassword = input.type === 'password';
             input.type = isPassword ? 'text' : 'password';
             toggle.innerHTML = `<i class="fas fa-${isPassword ? 'eye-slash' : 'eye'}"></i>`;
+        }
+    }
+
+    /**
+     * Validate username format
+     */
+    validateUsername() {
+        const username = this.registerUsername?.value.trim();
+        if (username && !this.isValidUsername(username)) {
+            this.registerUsername.classList.add('invalid');
+            return false;
+        } else {
+            this.registerUsername?.classList.remove('invalid');
+            return true;
         }
     }
 
@@ -352,6 +382,14 @@ class AuthUI {
             this.confirmPassword?.classList.remove('invalid');
             return true;
         }
+    }
+
+    /**
+     * Validate username format
+     */
+    isValidUsername(username) {
+        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+        return usernameRegex.test(username);
     }
 
     /**
