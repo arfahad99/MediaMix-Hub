@@ -1,0 +1,26 @@
+{
+  "name": "mediamix-hub-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for MediaMix Hub - A modern media management application",
+  "main": "index.html",
+  "scripts": {
+    "start": "live-server --port=3000 --host=localhost --open=/login.html",
+    "dev": "live-server --port=3000 --host=localhost --open=/login.html --watch=.",
+    "build": "echo 'No build process needed for vanilla JS'"
+  },
+  "keywords": [
+    "media",
+    "frontend",
+    "vanilla-js",
+    "html",
+    "css"
+  ],
+  "author": "MediaMix Hub Team",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "dependencies": {
+    "@auth0/auth0-spa-js": "^2.11.0"
+  }
+}

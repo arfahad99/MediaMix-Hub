@@ -3,102 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediaMix Hub</title>
+    <title>MediaMix Hub - Your Creative Media Space</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-photo-video brand-icon"></i>
+                <span class="brand-text">MediaMix Hub</span>
+            </div>
+            <div class="nav-menu">
+                <div class="nav-user">
+                    <div class="user-avatar" id="userAvatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">Loading...</span>
+                        <span class="user-role" id="userRole">User</span>
+                    </div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <a href="#" class="dropdown-item" id="profileBtn">
+                            <i class="fas fa-user-circle"></i> Profile
+                        </a>
+                        <a href="#" class="dropdown-item" id="settingsBtn">
+                            <i class="fas fa-cog"></i> Settings
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item logout-btn" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <div class="app-container">
-        <!-- Header Section -->
-        <header class="app-header">
-            <h1>MediaMix Hub</h1>
-            <p>Manage your media files with ease</p>
-        </header>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title">
+                        Your Creative <span class="gradient-text">Media Hub</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Upload, organize, and manage your media files with style. 
+                        Experience the future of digital asset management.
+                    </p>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalFiles">0</div>
+                        <div class="stat-label">Total Files</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSize">0 MB</div>
+                        <div class="stat-label">Storage Used</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="recentUploads">0</div>
+                        <div class="stat-label">This Week</div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Upload Section -->
         <section class="upload-section" id="uploadSection">
-            <h2>Upload Media</h2>
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-cloud-upload-alt section-icon"></i>
+                    <h2>Upload New Media</h2>
+                </div>
+                <div class="section-subtitle">
+                    Drag & drop your files or click to browse
+                </div>
+            </div>
+            
             <form class="upload-form" id="uploadForm">
-                <div class="form-group">
-                    <label for="fileInput">Select File:</label>
-                    <input 
-                        type="file" 
-                        id="fileInput" 
-                        accept="image/*,video/*,audio/*"
-                        class="file-input"
-                    >
-                    <div class="file-info" id="fileInfo"></div>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="upload-text">
+                            <h3>Drop your files here</h3>
+                            <p>or <span class="browse-link">browse files</span></p>
+                        </div>
+                        <input 
+                            type="file" 
+                            id="fileInput" 
+                            accept="image/*,video/*,audio/*"
+                            class="file-input"
+                            multiple
+                        >
+                    </div>
+                    <div class="file-preview" id="filePreview"></div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="descriptionInput">Description:</label>
-                    <textarea 
-                        id="descriptionInput" 
-                        class="description-input"
-                        placeholder="Enter a description for your media..."
-                        maxlength="500"
-                        rows="3"
-                    ></textarea>
-                    <div class="char-count" id="charCount">0/500</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="descriptionInput">
+                            <i class="fas fa-align-left"></i>
+                            Description
+                        </label>
+                        <textarea 
+                            id="descriptionInput" 
+                            class="description-input"
+                            placeholder="Add a description for your media..."
+                            maxlength="500"
+                            rows="3"
+                        ></textarea>
+                        <div class="char-count" id="charCount">0/500</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tagsInput">
+                            <i class="fas fa-tags"></i>
+                            Tags (optional)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="tagsInput" 
+                            class="tags-input"
+                            placeholder="Add tags separated by commas..."
+                        >
+                        <div class="tags-preview" id="tagsPreview"></div>
+                    </div>
                 </div>
                 
-                <button type="submit" class="upload-btn" id="uploadBtn">
-                    <span class="btn-text">Upload Media</span>
-                    <span class="loading-spinner" id="uploadSpinner"></span>
-                </button>
+                <div class="upload-actions">
+                    <button type="button" class="btn btn-secondary" id="clearBtn">
+                        <i class="fas fa-times"></i>
+                        Clear
+                    </button>
+                    <button type="submit" class="btn btn-primary upload-btn" id="uploadBtn">
+                        <span class="btn-text">
+                            <i class="fas fa-upload"></i>
+                            Upload Media
+                        </span>
+                        <span class="loading-spinner" id="uploadSpinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                    </button>
+                </div>
                 
-                <div class="error-message" id="uploadError"></div>
-                <div class="success-message" id="uploadSuccess"></div>
+                <div class="upload-progress" id="uploadProgress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Uploading...</div>
+                </div>
+                
+                <div class="message-container">
+                    <div class="error-message" id="uploadError"></div>
+                    <div class="success-message" id="uploadSuccess"></div>
+                </div>
             </form>
         </section>
 
         <!-- Gallery Section -->
         <section class="gallery-section" id="gallerySection">
-            <div class="gallery-header">
-                <h2>Media Gallery</h2>
-                <div class="gallery-stats" id="galleryStats"></div>
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-images section-icon"></i>
+                    <h2>Media Gallery</h2>
+                </div>
+                <div class="gallery-controls">
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="grid" id="gridViewBtn">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="view-btn" data-view="list" id="listViewBtn">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                    <div class="filter-dropdown">
+                        <button class="filter-btn" id="filterBtn">
+                            <i class="fas fa-filter"></i>
+                            Filter
+                        </button>
+                        <div class="filter-menu" id="filterMenu">
+                            <div class="filter-option" data-filter="all">All Files</div>
+                            <div class="filter-option" data-filter="image">Images</div>
+                            <div class="filter-option" data-filter="video">Videos</div>
+                            <div class="filter-option" data-filter="audio">Audio</div>
+                        </div>
+                    </div>
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" placeholder="Search media..." id="searchInput">
+                    </div>
+                </div>
             </div>
             
-            <div class="gallery-container" id="galleryContainer">
+            <div class="gallery-stats-bar">
+                <div class="stats-info">
+                    <span class="gallery-count" id="galleryCount">0 items</span>
+                    <span class="gallery-size" id="gallerySize">0 MB total</span>
+                </div>
+                <div class="sort-options">
+                    <select class="sort-select" id="sortSelect">
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                        <option value="name-asc">Name A-Z</option>
+                        <option value="name-desc">Name Z-A</option>
+                        <option value="size-desc">Largest First</option>
+                        <option value="size-asc">Smallest First</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="gallery-container grid-view" id="galleryContainer">
                 <!-- Media cards will be dynamically inserted here -->
             </div>
             
             <div class="empty-state" id="emptyState">
-                <div class="empty-icon">📁</div>
+                <div class="empty-illustration">
+                    <i class="fas fa-folder-open"></i>
+                </div>
                 <h3>No media files yet</h3>
                 <p>Upload your first image, video, or audio file to get started!</p>
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-plus"></i>
+                    Upload First File
+                </button>
+            </div>
+            
+            <div class="loading-state" id="loadingState">
+                <div class="loading-spinner-large">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Loading your media...</p>
             </div>
         </section>
     </div>
 
-    <!-- Edit Modal (hidden by default) -->
+    <!-- Modals -->
+    <!-- Edit Modal -->
     <div class="modal-overlay" id="editModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Edit Description</h3>
-                <button class="modal-close" id="modalClose">&times;</button>
+                <h3><i class="fas fa-edit"></i> Edit Media</h3>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <textarea 
-                    id="editDescriptionInput" 
-                    class="edit-description-input"
-                    maxlength="500"
-                    rows="4"
-                ></textarea>
-                <div class="char-count" id="editCharCount">0/500</div>
+                <div class="form-group">
+                    <label for="editDescriptionInput">Description</label>
+                    <textarea 
+                        id="editDescriptionInput" 
+                        class="edit-description-input"
+                        maxlength="500"
+                        rows="4"
+                    ></textarea>
+                    <div class="char-count" id="editCharCount">0/500</div>
+                </div>
+                <div class="form-group">
+                    <label for="editTagsInput">Tags</label>
+                    <input 
+                        type="text" 
+                        id="editTagsInput" 
+                        class="tags-input"
+                        placeholder="Add tags separated by commas..."
+                    >
+                    <div class="tags-preview" id="editTagsPreview"></div>
+                </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelEdit">Cancel</button>
-                <button class="btn btn-primary" id="saveEdit">Save Changes</button>
+                <button class="btn btn-secondary" id="cancelEdit">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-primary" id="saveEdit">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- View Modal (hidden by default) -->
+    <!-- View Modal -->
     <div class="modal-overlay" id="viewModal">
         <div class="modal-content view-modal-content">
             <div class="modal-header">
-                <h3 id="viewModalTitle">View Media</h3>
-                <button class="modal-close" id="viewModalClose">&times;</button>
+                <h3 id="viewModalTitle"><i class="fas fa-eye"></i> View Media</h3>
+                <button class="modal-close" id="viewModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body view-modal-body">
                 <div class="media-preview" id="mediaPreview">
@@ -109,11 +306,51 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="closeView">Close</button>
+                <button class="btn btn-secondary" id="closeView">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn btn-primary" id="downloadBtn">
+                    <i class="fas fa-download"></i> Download
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-content delete-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-trash-alt"></i> Confirm Delete</h3>
+                <button class="modal-close" id="deleteModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="delete-warning">
+                    <i class="fas fa-exclamation-triangle warning-icon"></i>
+                    <p>Are you sure you want to delete this media file?</p>
+                    <p class="delete-filename" id="deleteFilename"></p>
+                    <p class="warning-text">This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelDelete">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-danger" id="confirmDelete">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="data-models.js"></script>
+    <script src="mock-backend.js"></script>
+    <script src="auth.js"></script>
+    <script src="app-mock.js"></script>
 </body>
 </html>

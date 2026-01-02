@@ -1,47 +1,111 @@
 /**
- * MediaMix Hub - Main Application Module
- * A frontend-first media management application with mock backend
+ * MediaMix Hub - Modern Frontend Application
+ * Connected to Node.js Backend with Authentication
  */
+
+// Configuration
+const CONFIG = {
+    API_BASE_URL: 'http://localhost:5000/api',
+    MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
+    SUPPORTED_TYPES: {
+        image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+        video: ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov'],
+        audio: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/mpeg', 'audio/aac']
+    },
+    TOAST_DURATION: 5000
+};
 
 // Application State
 const AppState = {
+    user: null,
     mediaItems: [],
+    filteredItems: [],
+    currentFilter: 'all',
+    currentSort: 'date-desc',
+    currentView: 'grid',
+    selectedFiles: [],
     currentEditId: null,
-    isLoading: false
+    currentDeleteId: null,
+    isLoading: false,
+    searchQuery: ''
 };
 
-// DOM Elements - Cached for performance
+// DOM Elements Cache
 const DOM = {
+    // Navigation
+    userAvatar: null,
+    userName: null,
+    userRole: null,
+    userDropdown: null,
+    logoutBtn: null,
+    
+    // Stats
+    totalFiles: null,
+    totalSize: null,
+    recentUploads: null,
+    
     // Upload Section
     uploadForm: null,
+    uploadArea: null,
     fileInput: null,
+    filePreview: null,
     descriptionInput: null,
+    tagsInput: null,
+    tagsPreview: null,
+    charCount: null,
+    clearBtn: null,
     uploadBtn: null,
     uploadSpinner: null,
+    uploadProgress: null,
+    progressFill: null,
+    progressText: null,
     uploadError: null,
     uploadSuccess: null,
-    fileInfo: null,
-    charCount: null,
     
     // Gallery Section
     galleryContainer: null,
-    galleryStats: null,
+    galleryCount: null,
+    gallerySize: null,
+    gridViewBtn: null,
+    listViewBtn: null,
+    filterBtn: null,
+    filterMenu: null,
+    searchInput: null,
+    sortSelect: null,
     emptyState: null,
+    loadingState: null,
     
-    // Edit Modal
+    // Modals
     editModal: null,
     editDescriptionInput: null,
+    editTagsInput: null,
+    editTagsPreview: null,
     editCharCount: null,
     modalClose: null,
     cancelEdit: null,
-    saveEdit: null
+    saveEdit: null,
+    
+    viewModal: null,
+    viewModalTitle: null,
+    viewModalClose: null,
+    mediaPreview: null,
+    mediaDetails: null,
+    closeView: null,
+    downloadBtn: null,
+    
+    deleteModal: null,
+    deleteFilename: null,
+    deleteModalClose: null,
+    cancelDelete: null,
+    confirmDelete: null,
+    
+    toastContainer: null
 };
 
 // Utility Functions
 const Utils = {
     /**
-     * Generate a unique ID for media items
-     * @returns {string} Unique identifier
+     * Generate unique ID
      */
     generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -49,51 +113,33 @@ const Utils = {
 
     /**
      * Format date for display
-     * @param {Date|string} date - Date to format
-     * @returns {string} Formatted date string
      */
     formatDate(date) {
         const d = new Date(date);
-        return d.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        const now = new Date();
+        const diff = now - d;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        
+        if (days === 0) {
+            return 'Today ' + d.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        } else if (days === 1) {
+            return 'Yesterday';
+        } else if (days < 7) {
+            return `${days} days ago`;
+        } else {
+            return d.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
     },
 
     /**
-     * Get file type category from MIME type
-     * @param {string} mimeType - File MIME type
-     * @returns {string} File category (image, video, audio)
-     */
-    getFileType(mimeType) {
-        if (mimeType.startsWith('image/')) return 'image';
-        if (mimeType.startsWith('video/')) return 'video';
-        if (mimeType.startsWith('audio/')) return 'audio';
-        return 'unknown';
-    },
-
-    /**
-     * Get appropriate icon for file type
-     * @param {string} fileType - File type category
-     * @returns {string} Emoji icon
-     */
-    getFileIcon(fileType) {
-        const icons = {
-            image: '🖼️',
-            video: '🎥',
-            audio: '🎵',
-            unknown: '📄'
-        };
-        return icons[fileType] || icons.unknown;
-    },
-
-    /**
-     * Format file size for display
-     * @param {number} bytes - File size in bytes
-     * @returns {string} Formatted file size
+     * Format file size
      */
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
@@ -104,583 +150,1008 @@ const Utils = {
     },
 
     /**
-     * Validate file type
-     * @param {File} file - File to validate
-     * @returns {boolean} True if valid file type
+     * Get file type category
      */
-    isValidFileType(file) {
-        const validTypes = [
-            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-            'video/mp4', 'video/webm', 'video/ogg',
-            'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/mpeg'
-        ];
-        return validTypes.includes(file.type);
+    getFileType(mimeType) {
+        for (const [type, mimes] of Object.entries(CONFIG.SUPPORTED_TYPES)) {
+            if (mimes.includes(mimeType)) return type;
+        }
+        return 'unknown';
     },
 
     /**
-     * Show message to user
-     * @param {string} message - Message text
-     * @param {string} type - Message type ('error' or 'success')
-     * @param {number} duration - Display duration in ms
+     * Get file icon
      */
-    showMessage(message, type = 'error', duration = 5000) {
-        const element = type === 'error' ? DOM.uploadError : DOM.uploadSuccess;
-        element.textContent = message;
-        element.style.display = 'block';
+    getFileIcon(fileType) {
+        const icons = {
+            image: 'fas fa-image',
+            video: 'fas fa-video',
+            audio: 'fas fa-music',
+            unknown: 'fas fa-file'
+        };
+        return icons[fileType] || icons.unknown;
+    },
+
+    /**
+     * Validate file
+     */
+    validateFile(file) {
+        const errors = [];
         
-        setTimeout(() => {
-            element.style.display = 'none';
-        }, duration);
+        if (file.size > CONFIG.MAX_FILE_SIZE) {
+            errors.push(`File size exceeds ${Utils.formatFileSize(CONFIG.MAX_FILE_SIZE)} limit`);
+        }
+        
+        const fileType = Utils.getFileType(file.type);
+        if (fileType === 'unknown') {
+            errors.push('Unsupported file type');
+        }
+        
+        return errors;
     },
 
     /**
-     * Set loading state for upload button
-     * @param {boolean} loading - Loading state
+     * Parse tags from string
      */
-    setLoadingState(loading) {
-        AppState.isLoading = loading;
-        DOM.uploadBtn.disabled = loading;
-        DOM.uploadBtn.classList.toggle('loading', loading);
+    parseTags(tagString) {
+        return tagString
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0)
+            .slice(0, 10); // Limit to 10 tags
+    },
+
+    /**
+     * Debounce function
+     */
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+
+    /**
+     * Escape HTML
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 };
 
-// Mock Backend API - Placeholder for future Azure integration
-class MockBackendAPI {
-    constructor() {
-        this.storageKey = 'mediamix_hub_data';
-        this.backupKey = 'mediamix_hub_backup';
-    }
-
+// API Service
+const API = {
     /**
-     * Initialize storage and load existing data
+     * Make authenticated request
      */
-    async init() {
-        try {
-            const data = this.loadFromStorage();
-            AppState.mediaItems = data.mediaItems || [];
-            console.log('Mock backend initialized with', AppState.mediaItems.length, 'items');
-        } catch (error) {
-            console.error('Failed to initialize mock backend:', error);
-            AppState.mediaItems = [];
-        }
-    }
-
-    /**
-     * Load data from localStorage with fallback
-     * @returns {Object} Stored data object
-     */
-    loadFromStorage() {
-        try {
-            const data = localStorage.getItem(this.storageKey);
-            return data ? JSON.parse(data) : { mediaItems: [], version: '1.0' };
-        } catch (error) {
-            console.warn('Primary storage failed, trying backup:', error);
-            try {
-                const backup = localStorage.getItem(this.backupKey);
-                return backup ? JSON.parse(backup) : { mediaItems: [], version: '1.0' };
-            } catch (backupError) {
-                console.error('Backup storage also failed:', backupError);
-                return { mediaItems: [], version: '1.0' };
-            }
-        }
-    }
-
-    /**
-     * Save data to localStorage with backup
-     * @param {Object} data - Data to save
-     */
-    saveToStorage(data) {
-        try {
-            const dataString = JSON.stringify(data);
-            localStorage.setItem(this.storageKey, dataString);
-            localStorage.setItem(this.backupKey, dataString);
-        } catch (error) {
-            console.error('Failed to save to storage:', error);
-            throw new Error('Storage quota exceeded or unavailable');
-        }
-    }
-
-    /**
-     * Create a new media item
-     * @param {Object} mediaData - Media item data
-     * @returns {Promise<Object>} Created media item
-     */
-    async createMedia(mediaData) {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+    async request(endpoint, options = {}) {
+        const token = localStorage.getItem('authToken');
         
-        const mediaItem = {
-            id: Utils.generateId(),
-            fileName: mediaData.fileName,
-            description: mediaData.description,
-            uploadDate: new Date().toISOString(),
-            fileType: mediaData.fileType,
-            fileSize: mediaData.fileSize
+        const config = {
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` }),
+                ...options.headers
+            },
+            ...options
         };
 
-        AppState.mediaItems.push(mediaItem);
-        this.saveToStorage({
-            mediaItems: AppState.mediaItems,
-            lastUpdated: new Date().toISOString(),
-            version: '1.0'
-        });
+        // Remove Content-Type for FormData
+        if (options.body instanceof FormData) {
+            delete config.headers['Content-Type'];
+        }
 
-        return mediaItem;
-    }
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, config);
+            
+            if (response.status === 401) {
+                // Token expired or invalid
+                localStorage.removeItem('authToken');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Request failed');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('API Request failed:', error);
+            throw error;
+        }
+    },
 
     /**
-     * Get all media items
-     * @returns {Promise<Array>} Array of media items
+     * Get user profile
+     */
+    async getProfile() {
+        return this.request('/auth/profile');
+    },
+
+    /**
+     * Get all media
      */
     async getMedia() {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 200));
-        return [...AppState.mediaItems];
-    }
+        return this.request('/media');
+    },
 
     /**
-     * Update a media item
-     * @param {string} id - Media item ID
-     * @param {Object} updates - Updates to apply
-     * @returns {Promise<Object>} Updated media item
+     * Upload media
      */
-    async updateMedia(id, updates) {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 300));
+    async uploadMedia(formData, onProgress) {
+        const token = localStorage.getItem('authToken');
         
-        const index = AppState.mediaItems.findIndex(item => item.id === id);
-        if (index === -1) {
-            throw new Error('Media item not found');
-        }
-
-        AppState.mediaItems[index] = { ...AppState.mediaItems[index], ...updates };
-        this.saveToStorage({
-            mediaItems: AppState.mediaItems,
-            lastUpdated: new Date().toISOString(),
-            version: '1.0'
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable && onProgress) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    onProgress(percentComplete);
+                }
+            });
+            
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    resolve(JSON.parse(xhr.responseText));
+                } else {
+                    reject(new Error('Upload failed'));
+                }
+            });
+            
+            xhr.addEventListener('error', () => {
+                reject(new Error('Upload failed'));
+            });
+            
+            xhr.open('POST', `${CONFIG.API_BASE_URL}/media/upload`);
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            xhr.send(formData);
         });
-
-        return AppState.mediaItems[index];
-    }
+    },
 
     /**
-     * Delete a media item
-     * @param {string} id - Media item ID
-     * @returns {Promise<void>}
+     * Update media
+     */
+    async updateMedia(id, data) {
+        return this.request(`/media/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+
+    /**
+     * Delete media
      */
     async deleteMedia(id) {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        const index = AppState.mediaItems.findIndex(item => item.id === id);
-        if (index === -1) {
-            throw new Error('Media item not found');
-        }
-
-        AppState.mediaItems.splice(index, 1);
-        this.saveToStorage({
-            mediaItems: AppState.mediaItems,
-            lastUpdated: new Date().toISOString(),
-            version: '1.0'
+        return this.request(`/media/${id}`, {
+            method: 'DELETE'
         });
-    }
-}
+    },
 
-// Initialize mock backend
-const mockAPI = new MockBackendAPI();
+    /**
+     * Download media
+     */
+    async downloadMedia(id) {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${CONFIG.API_BASE_URL}/media/${id}/download`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Download failed');
+        }
+        
+        return response.blob();
+    }
+};
+
+// Toast Notification System
+const Toast = {
+    show(message, type = 'info', duration = CONFIG.TOAST_DURATION) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icons = {
+            success: 'fas fa-check-circle',
+            error: 'fas fa-exclamation-circle',
+            warning: 'fas fa-exclamation-triangle',
+            info: 'fas fa-info-circle'
+        };
+        
+        toast.innerHTML = `
+            <i class="toast-icon ${icons[type]}"></i>
+            <div class="toast-content">
+                <div class="toast-message">${Utils.escapeHtml(message)}</div>
+            </div>
+            <button class="toast-close">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        DOM.toastContainer.appendChild(toast);
+        
+        // Show toast
+        setTimeout(() => toast.classList.add('show'), 100);
+        
+        // Auto remove
+        const removeToast = () => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        };
+        
+        // Close button
+        toast.querySelector('.toast-close').addEventListener('click', removeToast);
+        
+        // Auto remove after duration
+        setTimeout(removeToast, duration);
+    },
+
+    success(message) {
+        this.show(message, 'success');
+    },
+
+    error(message) {
+        this.show(message, 'error');
+    },
+
+    warning(message) {
+        this.show(message, 'warning');
+    },
+
+    info(message) {
+        this.show(message, 'info');
+    }
+};
 
 // Application Initialization
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('MediaMix Hub initializing...');
     
-    // Cache DOM elements
+    // Check authentication
+    if (!await checkAuth()) {
+        return;
+    }
+    
+    // Initialize DOM elements
     initializeDOMElements();
     
     // Set up event listeners
     setupEventListeners();
     
-    // Initialize mock backend
-    await mockAPI.init();
-    
-    // Initial render
-    await renderGallery();
+    // Load initial data
+    await loadInitialData();
     
     console.log('MediaMix Hub initialized successfully');
 });
 
 /**
- * Cache all DOM elements for performance
+ * Check authentication status
+ */
+async function checkAuth() {
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    try {
+        const profile = await API.getProfile();
+        AppState.user = profile.user;
+        updateUserUI();
+        return true;
+    } catch (error) {
+        console.error('Authentication failed:', error);
+        localStorage.removeItem('authToken');
+        window.location.href = 'login.html';
+        return false;
+    }
+}
+
+/**
+ * Update user UI
+ */
+function updateUserUI() {
+    if (AppState.user) {
+        DOM.userName.textContent = AppState.user.name;
+        DOM.userRole.textContent = AppState.user.email;
+        
+        // Set avatar initials
+        const initials = AppState.user.name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase();
+        DOM.userAvatar.innerHTML = `<span>${initials}</span>`;
+    }
+}
+
+/**
+ * Initialize DOM elements
  */
 function initializeDOMElements() {
+    // Navigation
+    DOM.userAvatar = document.getElementById('userAvatar');
+    DOM.userName = document.getElementById('userName');
+    DOM.userRole = document.getElementById('userRole');
+    DOM.userDropdown = document.getElementById('userDropdown');
+    DOM.logoutBtn = document.getElementById('logoutBtn');
+    
+    // Stats
+    DOM.totalFiles = document.getElementById('totalFiles');
+    DOM.totalSize = document.getElementById('totalSize');
+    DOM.recentUploads = document.getElementById('recentUploads');
+    
     // Upload Section
     DOM.uploadForm = document.getElementById('uploadForm');
+    DOM.uploadArea = document.getElementById('uploadArea');
     DOM.fileInput = document.getElementById('fileInput');
+    DOM.filePreview = document.getElementById('filePreview');
     DOM.descriptionInput = document.getElementById('descriptionInput');
+    DOM.tagsInput = document.getElementById('tagsInput');
+    DOM.tagsPreview = document.getElementById('tagsPreview');
+    DOM.charCount = document.getElementById('charCount');
+    DOM.clearBtn = document.getElementById('clearBtn');
     DOM.uploadBtn = document.getElementById('uploadBtn');
     DOM.uploadSpinner = document.getElementById('uploadSpinner');
+    DOM.uploadProgress = document.getElementById('uploadProgress');
+    DOM.progressFill = document.getElementById('progressFill');
+    DOM.progressText = document.getElementById('progressText');
     DOM.uploadError = document.getElementById('uploadError');
     DOM.uploadSuccess = document.getElementById('uploadSuccess');
-    DOM.fileInfo = document.getElementById('fileInfo');
-    DOM.charCount = document.getElementById('charCount');
     
     // Gallery Section
     DOM.galleryContainer = document.getElementById('galleryContainer');
-    DOM.galleryStats = document.getElementById('galleryStats');
+    DOM.galleryCount = document.getElementById('galleryCount');
+    DOM.gallerySize = document.getElementById('gallerySize');
+    DOM.gridViewBtn = document.getElementById('gridViewBtn');
+    DOM.listViewBtn = document.getElementById('listViewBtn');
+    DOM.filterBtn = document.getElementById('filterBtn');
+    DOM.filterMenu = document.getElementById('filterMenu');
+    DOM.searchInput = document.getElementById('searchInput');
+    DOM.sortSelect = document.getElementById('sortSelect');
     DOM.emptyState = document.getElementById('emptyState');
+    DOM.loadingState = document.getElementById('loadingState');
     
-    // Edit Modal
+    // Modals
     DOM.editModal = document.getElementById('editModal');
     DOM.editDescriptionInput = document.getElementById('editDescriptionInput');
+    DOM.editTagsInput = document.getElementById('editTagsInput');
+    DOM.editTagsPreview = document.getElementById('editTagsPreview');
     DOM.editCharCount = document.getElementById('editCharCount');
     DOM.modalClose = document.getElementById('modalClose');
     DOM.cancelEdit = document.getElementById('cancelEdit');
     DOM.saveEdit = document.getElementById('saveEdit');
     
-    // View Modal
     DOM.viewModal = document.getElementById('viewModal');
     DOM.viewModalTitle = document.getElementById('viewModalTitle');
     DOM.viewModalClose = document.getElementById('viewModalClose');
     DOM.mediaPreview = document.getElementById('mediaPreview');
     DOM.mediaDetails = document.getElementById('mediaDetails');
     DOM.closeView = document.getElementById('closeView');
+    DOM.downloadBtn = document.getElementById('downloadBtn');
+    
+    DOM.deleteModal = document.getElementById('deleteModal');
+    DOM.deleteFilename = document.getElementById('deleteFilename');
+    DOM.deleteModalClose = document.getElementById('deleteModalClose');
+    DOM.cancelDelete = document.getElementById('cancelDelete');
+    DOM.confirmDelete = document.getElementById('confirmDelete');
+    
+    DOM.toastContainer = document.getElementById('toastContainer');
 }
 
 /**
- * Set up all event listeners
+ * Set up event listeners
  */
 function setupEventListeners() {
-    // Upload form events
+    // Logout
+    DOM.logoutBtn.addEventListener('click', handleLogout);
+    
+    // Upload form
     DOM.uploadForm.addEventListener('submit', handleUpload);
     DOM.fileInput.addEventListener('change', handleFileSelect);
     DOM.descriptionInput.addEventListener('input', updateCharCount);
+    DOM.tagsInput.addEventListener('input', updateTagsPreview);
+    DOM.clearBtn.addEventListener('click', clearUploadForm);
     
-    // Edit modal events
+    // Drag and drop
+    DOM.uploadArea.addEventListener('dragover', handleDragOver);
+    DOM.uploadArea.addEventListener('dragleave', handleDragLeave);
+    DOM.uploadArea.addEventListener('drop', handleDrop);
+    
+    // Gallery controls
+    DOM.gridViewBtn.addEventListener('click', () => setView('grid'));
+    DOM.listViewBtn.addEventListener('click', () => setView('list'));
+    DOM.searchInput.addEventListener('input', Utils.debounce(handleSearch, 300));
+    DOM.sortSelect.addEventListener('change', handleSort);
+    
+    // Filter options
+    DOM.filterMenu.addEventListener('click', handleFilter);
+    
+    // Modal events
     DOM.modalClose.addEventListener('click', closeEditModal);
     DOM.cancelEdit.addEventListener('click', closeEditModal);
     DOM.saveEdit.addEventListener('click', handleSaveEdit);
     DOM.editDescriptionInput.addEventListener('input', updateEditCharCount);
+    DOM.editTagsInput.addEventListener('input', updateEditTagsPreview);
     
-    // View modal events
     DOM.viewModalClose.addEventListener('click', closeViewModal);
     DOM.closeView.addEventListener('click', closeViewModal);
+    DOM.downloadBtn.addEventListener('click', handleDownload);
+    
+    DOM.deleteModalClose.addEventListener('click', closeDeleteModal);
+    DOM.cancelDelete.addEventListener('click', closeDeleteModal);
+    DOM.confirmDelete.addEventListener('click', handleConfirmDelete);
     
     // Close modals on overlay click
-    DOM.editModal.addEventListener('click', (e) => {
-        if (e.target === DOM.editModal) {
-            closeEditModal();
-        }
+    [DOM.editModal, DOM.viewModal, DOM.deleteModal].forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeAllModals();
+            }
+        });
     });
     
-    DOM.viewModal.addEventListener('click', (e) => {
-        if (e.target === DOM.viewModal) {
-            closeViewModal();
-        }
-    });
-    
-    // Close modals on Escape key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            if (DOM.editModal.classList.contains('show')) {
-                closeEditModal();
-            }
-            if (DOM.viewModal.classList.contains('show')) {
-                closeViewModal();
-            }
-        }
-    });
+    // Keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboard);
+}
+
+/**
+ * Load initial data
+ */
+async function loadInitialData() {
+    try {
+        showLoadingState(true);
+        const response = await API.getMedia();
+        AppState.mediaItems = response.media || [];
+        updateStats();
+        filterAndSortMedia();
+        renderGallery();
+    } catch (error) {
+        console.error('Failed to load media:', error);
+        Toast.error('Failed to load media files');
+    } finally {
+        showLoadingState(false);
+    }
+}
+
+/**
+ * Handle logout
+ */
+function handleLogout(e) {
+    e.preventDefault();
+    localStorage.removeItem('authToken');
+    window.location.href = 'login.html';
 }
 
 /**
  * Handle file selection
- * @param {Event} event - File input change event
  */
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    
-    if (!file) {
-        DOM.fileInfo.textContent = '';
-        return;
-    }
-    
-    if (!Utils.isValidFileType(file)) {
-        DOM.fileInfo.innerHTML = `<span style="color: #dc3545;">❌ Invalid file type. Please select an image, video, or audio file.</span>`;
-        return;
-    }
-    
-    const fileSize = (file.size / 1024 / 1024).toFixed(2);
-    const fileType = Utils.getFileType(file.type);
-    const icon = Utils.getFileIcon(fileType);
-    
-    DOM.fileInfo.innerHTML = `
-        <span style="color: #28a745;">
-            ${icon} ${file.name} (${fileSize} MB) - ${fileType}
-        </span>
-    `;
+function handleFileSelect(e) {
+    const files = Array.from(e.target.files);
+    processSelectedFiles(files);
 }
 
 /**
- * Update character count for description input
+ * Handle drag over
+ */
+function handleDragOver(e) {
+    e.preventDefault();
+    DOM.uploadArea.classList.add('drag-over');
+}
+
+/**
+ * Handle drag leave
+ */
+function handleDragLeave(e) {
+    e.preventDefault();
+    DOM.uploadArea.classList.remove('drag-over');
+}
+
+/**
+ * Handle drop
+ */
+function handleDrop(e) {
+    e.preventDefault();
+    DOM.uploadArea.classList.remove('drag-over');
+    
+    const files = Array.from(e.dataTransfer.files);
+    processSelectedFiles(files);
+}
+
+/**
+ * Process selected files
+ */
+function processSelectedFiles(files) {
+    AppState.selectedFiles = [];
+    
+    files.forEach(file => {
+        const errors = Utils.validateFile(file);
+        if (errors.length === 0) {
+            AppState.selectedFiles.push(file);
+        } else {
+            Toast.error(`${file.name}: ${errors.join(', ')}`);
+        }
+    });
+    
+    updateFilePreview();
+}
+
+/**
+ * Update file preview
+ */
+function updateFilePreview() {
+    if (AppState.selectedFiles.length === 0) {
+        DOM.filePreview.innerHTML = '';
+        return;
+    }
+    
+    DOM.filePreview.innerHTML = AppState.selectedFiles.map((file, index) => {
+        const fileType = Utils.getFileType(file.type);
+        const icon = Utils.getFileIcon(fileType);
+        
+        return `
+            <div class="file-preview-item">
+                <i class="${icon} file-preview-icon"></i>
+                <div class="file-preview-name">${Utils.escapeHtml(file.name)}</div>
+                <button type="button" class="file-remove" onclick="removeFile(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Remove file from selection
+ */
+function removeFile(index) {
+    AppState.selectedFiles.splice(index, 1);
+    updateFilePreview();
+}
+
+/**
+ * Update character count
  */
 function updateCharCount() {
     const count = DOM.descriptionInput.value.length;
     DOM.charCount.textContent = `${count}/500`;
-    DOM.charCount.style.color = count > 450 ? '#dc3545' : '#6c757d';
+    DOM.charCount.style.color = count > 450 ? 'var(--error-color)' : 'var(--gray-500)';
 }
 
 /**
- * Update character count for edit modal
+ * Update tags preview
  */
-function updateEditCharCount() {
-    const count = DOM.editDescriptionInput.value.length;
-    DOM.editCharCount.textContent = `${count}/500`;
-    DOM.editCharCount.style.color = count > 450 ? '#dc3545' : '#6c757d';
+function updateTagsPreview() {
+    const tags = Utils.parseTags(DOM.tagsInput.value);
+    
+    DOM.tagsPreview.innerHTML = tags.map(tag => `
+        <span class="tag-item">
+            ${Utils.escapeHtml(tag)}
+            <button type="button" class="tag-remove" onclick="removeTag('${tag}')">
+                <i class="fas fa-times"></i>
+            </button>
+        </span>
+    `).join('');
 }
 
 /**
- * Handle upload form submission
- * @param {Event} event - Form submit event
+ * Remove tag
  */
-async function handleUpload(event) {
-    event.preventDefault();
+function removeTag(tagToRemove) {
+    const currentTags = Utils.parseTags(DOM.tagsInput.value);
+    const newTags = currentTags.filter(tag => tag !== tagToRemove);
+    DOM.tagsInput.value = newTags.join(', ');
+    updateTagsPreview();
+}
+
+/**
+ * Clear upload form
+ */
+function clearUploadForm() {
+    DOM.uploadForm.reset();
+    AppState.selectedFiles = [];
+    updateFilePreview();
+    updateCharCount();
+    updateTagsPreview();
+    hideMessages();
+}
+
+/**
+ * Handle upload
+ */
+async function handleUpload(e) {
+    e.preventDefault();
     
     if (AppState.isLoading) return;
     
-    const file = DOM.fileInput.files[0];
+    if (AppState.selectedFiles.length === 0) {
+        Toast.error('Please select at least one file to upload');
+        return;
+    }
+    
     const description = DOM.descriptionInput.value.trim();
-    
-    // Validation
-    if (!file) {
-        Utils.showMessage('Please select a file to upload.');
-        return;
-    }
-    
-    if (!Utils.isValidFileType(file)) {
-        Utils.showMessage('Invalid file type. Please select an image, video, or audio file.');
-        return;
-    }
-    
     if (!description) {
-        Utils.showMessage('Please enter a description for your media.');
-        return;
-    }
-    
-    if (description.length > 500) {
-        Utils.showMessage('Description must be 500 characters or less.');
+        Toast.error('Please enter a description');
         return;
     }
     
     try {
-        Utils.setLoadingState(true);
+        setLoadingState(true);
+        showUploadProgress(true);
         
-        const mediaData = {
-            fileName: file.name,
-            description: description,
-            fileType: Utils.getFileType(file.type),
-            fileSize: file.size
-        };
+        for (let i = 0; i < AppState.selectedFiles.length; i++) {
+            const file = AppState.selectedFiles[i];
+            const formData = new FormData();
+            
+            formData.append('file', file);
+            formData.append('description', description);
+            
+            const tags = Utils.parseTags(DOM.tagsInput.value);
+            if (tags.length > 0) {
+                formData.append('tags', JSON.stringify(tags));
+            }
+            
+            DOM.progressText.textContent = `Uploading ${file.name} (${i + 1}/${AppState.selectedFiles.length})...`;
+            
+            const response = await API.uploadMedia(formData, (progress) => {
+                DOM.progressFill.style.width = `${progress}%`;
+            });
+            
+            AppState.mediaItems.unshift(response.media);
+        }
         
-        const newItem = await mockAPI.createMedia(mediaData);
+        clearUploadForm();
+        updateStats();
+        filterAndSortMedia();
+        renderGallery();
         
-        // Clear form
-        DOM.uploadForm.reset();
-        DOM.fileInfo.textContent = '';
-        updateCharCount();
-        
-        // Refresh gallery
-        await renderGallery();
-        
-        Utils.showMessage(`Successfully uploaded ${newItem.fileName}!`, 'success');
+        Toast.success(`Successfully uploaded ${AppState.selectedFiles.length} file(s)`);
         
     } catch (error) {
         console.error('Upload failed:', error);
-        Utils.showMessage('Upload failed. Please try again.');
+        Toast.error('Upload failed. Please try again.');
     } finally {
-        Utils.setLoadingState(false);
+        setLoadingState(false);
+        showUploadProgress(false);
     }
 }
 
 /**
- * Render the media gallery
+ * Set loading state
  */
-async function renderGallery() {
-    try {
-        const mediaItems = await mockAPI.getMedia();
-        
-        // Update stats
-        DOM.galleryStats.textContent = `${mediaItems.length} item${mediaItems.length !== 1 ? 's' : ''}`;
-        
-        // Show/hide empty state
-        if (mediaItems.length === 0) {
-            DOM.emptyState.classList.add('show');
-            DOM.galleryContainer.innerHTML = '';
-            return;
-        }
-        
-        DOM.emptyState.classList.remove('show');
-        
-        // Render media cards
-        DOM.galleryContainer.innerHTML = mediaItems.map(item => createMediaCard(item)).join('');
-        
-        // Add event listeners to action buttons
-        setupMediaCardEvents();
-        
-    } catch (error) {
-        console.error('Failed to render gallery:', error);
-        Utils.showMessage('Failed to load media gallery.');
+function setLoadingState(loading) {
+    AppState.isLoading = loading;
+    DOM.uploadBtn.disabled = loading;
+    DOM.uploadBtn.classList.toggle('loading', loading);
+}
+
+/**
+ * Show upload progress
+ */
+function showUploadProgress(show) {
+    DOM.uploadProgress.classList.toggle('show', show);
+    if (!show) {
+        DOM.progressFill.style.width = '0%';
+        DOM.progressText.textContent = '';
     }
 }
 
 /**
- * Create HTML for a media card
- * @param {Object} item - Media item
- * @returns {string} HTML string
+ * Show loading state
+ */
+function showLoadingState(show) {
+    DOM.loadingState.classList.toggle('show', show);
+    DOM.galleryContainer.style.display = show ? 'none' : 'grid';
+}
+
+/**
+ * Update stats
+ */
+function updateStats() {
+    const totalFiles = AppState.mediaItems.length;
+    const totalSize = AppState.mediaItems.reduce((sum, item) => sum + (item.fileSize || 0), 0);
+    
+    // Recent uploads (last 7 days)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const recentUploads = AppState.mediaItems.filter(item => 
+        new Date(item.createdAt) > weekAgo
+    ).length;
+    
+    DOM.totalFiles.textContent = totalFiles;
+    DOM.totalSize.textContent = Utils.formatFileSize(totalSize);
+    DOM.recentUploads.textContent = recentUploads;
+    
+    // Gallery stats
+    DOM.galleryCount.textContent = `${AppState.filteredItems.length} item${AppState.filteredItems.length !== 1 ? 's' : ''}`;
+    DOM.gallerySize.textContent = `${Utils.formatFileSize(
+        AppState.filteredItems.reduce((sum, item) => sum + (item.fileSize || 0), 0)
+    )} total`;
+}
+
+/**
+ * Set view mode
+ */
+function setView(view) {
+    AppState.currentView = view;
+    
+    DOM.gridViewBtn.classList.toggle('active', view === 'grid');
+    DOM.listViewBtn.classList.toggle('active', view === 'list');
+    
+    DOM.galleryContainer.classList.toggle('grid-view', view === 'grid');
+    DOM.galleryContainer.classList.toggle('list-view', view === 'list');
+    
+    renderGallery();
+}
+
+/**
+ * Handle search
+ */
+function handleSearch() {
+    AppState.searchQuery = DOM.searchInput.value.toLowerCase().trim();
+    filterAndSortMedia();
+    renderGallery();
+}
+
+/**
+ * Handle filter
+ */
+function handleFilter(e) {
+    if (e.target.classList.contains('filter-option')) {
+        AppState.currentFilter = e.target.dataset.filter;
+        filterAndSortMedia();
+        renderGallery();
+    }
+}
+
+/**
+ * Handle sort
+ */
+function handleSort() {
+    AppState.currentSort = DOM.sortSelect.value;
+    filterAndSortMedia();
+    renderGallery();
+}
+
+/**
+ * Filter and sort media
+ */
+function filterAndSortMedia() {
+    let filtered = [...AppState.mediaItems];
+    
+    // Apply filter
+    if (AppState.currentFilter !== 'all') {
+        filtered = filtered.filter(item => item.fileType === AppState.currentFilter);
+    }
+    
+    // Apply search
+    if (AppState.searchQuery) {
+        filtered = filtered.filter(item => 
+            item.originalName.toLowerCase().includes(AppState.searchQuery) ||
+            item.description.toLowerCase().includes(AppState.searchQuery) ||
+            (item.tags && item.tags.some(tag => tag.toLowerCase().includes(AppState.searchQuery)))
+        );
+    }
+    
+    // Apply sort
+    filtered.sort((a, b) => {
+        switch (AppState.currentSort) {
+            case 'date-desc':
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            case 'date-asc':
+                return new Date(a.createdAt) - new Date(b.createdAt);
+            case 'name-asc':
+                return a.originalName.localeCompare(b.originalName);
+            case 'name-desc':
+                return b.originalName.localeCompare(a.originalName);
+            case 'size-desc':
+                return (b.fileSize || 0) - (a.fileSize || 0);
+            case 'size-asc':
+                return (a.fileSize || 0) - (b.fileSize || 0);
+            default:
+                return 0;
+        }
+    });
+    
+    AppState.filteredItems = filtered;
+    updateStats();
+}
+
+/**
+ * Render gallery
+ */
+function renderGallery() {
+    if (AppState.filteredItems.length === 0) {
+        DOM.emptyState.classList.add('show');
+        DOM.galleryContainer.innerHTML = '';
+        return;
+    }
+    
+    DOM.emptyState.classList.remove('show');
+    
+    DOM.galleryContainer.innerHTML = AppState.filteredItems.map(item => 
+        createMediaCard(item)
+    ).join('');
+    
+    setupMediaCardEvents();
+}
+
+/**
+ * Create media card HTML
  */
 function createMediaCard(item) {
     const icon = Utils.getFileIcon(item.fileType);
-    const formattedDate = Utils.formatDate(item.uploadDate);
+    const formattedDate = Utils.formatDate(item.createdAt);
+    const tags = item.tags || [];
+    
+    if (AppState.currentView === 'list') {
+        return `
+            <div class="media-card" data-id="${item._id}">
+                <div class="media-header">
+                    <div class="media-icon">
+                        <i class="${icon}"></i>
+                    </div>
+                    <div class="media-info">
+                        <h3>${Utils.escapeHtml(item.originalName)}</h3>
+                        <div class="media-date">${formattedDate}</div>
+                    </div>
+                </div>
+                <div class="media-content">
+                    <div class="media-description">${Utils.escapeHtml(item.description)}</div>
+                    <div class="media-actions">
+                        <button class="action-btn view-btn" data-id="${item._id}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="action-btn edit-btn" data-id="${item._id}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn delete-btn" data-id="${item._id}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
     
     return `
-        <div class="media-card" data-id="${item.id}">
+        <div class="media-card animate-fade-in-up" data-id="${item._id}">
             <div class="media-header">
-                <div class="media-icon">${icon}</div>
+                <div class="media-icon">
+                    <i class="${icon}"></i>
+                </div>
                 <div class="media-info">
-                    <h3>${escapeHtml(item.fileName)}</h3>
+                    <h3>${Utils.escapeHtml(item.originalName)}</h3>
                     <div class="media-date">${formattedDate}</div>
                 </div>
             </div>
-            <div class="media-description">${escapeHtml(item.description)}</div>
+            <div class="media-description">${Utils.escapeHtml(item.description)}</div>
+            ${tags.length > 0 ? `
+                <div class="media-tags">
+                    ${tags.map(tag => `<span class="media-tag">${Utils.escapeHtml(tag)}</span>`).join('')}
+                </div>
+            ` : ''}
             <div class="media-actions">
-                <button class="action-btn view-btn" data-id="${item.id}">View</button>
-                <button class="action-btn edit-btn" data-id="${item.id}">Edit</button>
-                <button class="action-btn delete-btn" data-id="${item.id}">Delete</button>
+                <button class="action-btn view-btn" data-id="${item._id}">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <button class="action-btn edit-btn" data-id="${item._id}">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="action-btn delete-btn" data-id="${item._id}">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
             </div>
         </div>
     `;
 }
 
 /**
- * Escape HTML to prevent XSS
- * @param {string} text - Text to escape
- * @returns {string} Escaped text
- */
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-/**
- * Set up event listeners for media card buttons
+ * Set up media card events
  */
 function setupMediaCardEvents() {
-    // View buttons
     document.querySelectorAll('.view-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const id = e.target.getAttribute('data-id');
+            const id = e.target.closest('.action-btn').dataset.id;
             openViewModal(id);
         });
     });
     
-    // Edit buttons
     document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const id = e.target.getAttribute('data-id');
+            const id = e.target.closest('.action-btn').dataset.id;
             openEditModal(id);
         });
     });
     
-    // Delete buttons
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const id = e.target.getAttribute('data-id');
-            handleDelete(id);
+            const id = e.target.closest('.action-btn').dataset.id;
+            openDeleteModal(id);
         });
     });
 }
 
 /**
- * Open view modal for a media item
- * @param {string} id - Media item ID
+ * Open view modal
  */
 function openViewModal(id) {
-    const item = AppState.mediaItems.find(item => item.id === id);
+    const item = AppState.mediaItems.find(item => item._id === id);
     if (!item) return;
     
-    // Set modal title
-    DOM.viewModalTitle.textContent = `View: ${item.fileName}`;
+    AppState.currentViewId = id;
     
-    // Create media preview based on file type
+    DOM.viewModalTitle.innerHTML = `<i class="fas fa-eye"></i> ${Utils.escapeHtml(item.originalName)}`;
+    
+    // Create preview
     let previewHTML = '';
-    const icon = Utils.getFileIcon(item.fileType);
-    
     if (item.fileType === 'image') {
-        // For images, we'll show a placeholder since we don't have actual file data
-        previewHTML = `
-            <div class="file-placeholder">
-                <div class="file-icon">${icon}</div>
-                <p><strong>${item.fileName}</strong></p>
-                <p>Image preview would appear here</p>
-                <small>Note: This is a demo - actual images would be displayed when integrated with real file storage</small>
-            </div>
-        `;
+        previewHTML = `<img src="${CONFIG.API_BASE_URL}/media/${item._id}/file" alt="${Utils.escapeHtml(item.originalName)}" />`;
     } else if (item.fileType === 'video') {
-        previewHTML = `
-            <div class="file-placeholder">
-                <div class="file-icon">${icon}</div>
-                <p><strong>${item.fileName}</strong></p>
-                <p>Video player would appear here</p>
-                <small>Note: This is a demo - actual videos would be playable when integrated with real file storage</small>
-            </div>
-        `;
+        previewHTML = `<video controls><source src="${CONFIG.API_BASE_URL}/media/${item._id}/file" type="${item.mimeType}"></video>`;
     } else if (item.fileType === 'audio') {
-        previewHTML = `
-            <div class="file-placeholder">
-                <div class="file-icon">${icon}</div>
-                <p><strong>${item.fileName}</strong></p>
-                <p>Audio player would appear here</p>
-                <small>Note: This is a demo - actual audio would be playable when integrated with real file storage</small>
-            </div>
-        `;
+        previewHTML = `<audio controls><source src="${CONFIG.API_BASE_URL}/media/${item._id}/file" type="${item.mimeType}"></audio>`;
     } else {
+        const icon = Utils.getFileIcon(item.fileType);
         previewHTML = `
             <div class="file-placeholder">
-                <div class="file-icon">${icon}</div>
-                <p><strong>${item.fileName}</strong></p>
-                <p>File preview not available</p>
+                <div class="file-icon"><i class="${icon}"></i></div>
+                <p><strong>${Utils.escapeHtml(item.originalName)}</strong></p>
+                <p>Preview not available</p>
             </div>
         `;
     }
     
     DOM.mediaPreview.innerHTML = previewHTML;
     
-    // Create media details
-    const detailsHTML = `
+    // Create details
+    const tags = item.tags || [];
+    DOM.mediaDetails.innerHTML = `
         <h4>File Details</h4>
         <div class="detail-row">
-            <span class="detail-label">File Name:</span>
-            <span class="detail-value">${escapeHtml(item.fileName)}</span>
+            <span class="detail-label">Name:</span>
+            <span class="detail-value">${Utils.escapeHtml(item.originalName)}</span>
         </div>
         <div class="detail-row">
-            <span class="detail-label">File Type:</span>
+            <span class="detail-label">Type:</span>
             <span class="detail-value">${item.fileType.charAt(0).toUpperCase() + item.fileType.slice(1)}</span>
         </div>
         <div class="detail-row">
-            <span class="detail-label">File Size:</span>
-            <span class="detail-value">${item.fileSize ? Utils.formatFileSize(item.fileSize) : 'Unknown'}</span>
+            <span class="detail-label">Size:</span>
+            <span class="detail-value">${Utils.formatFileSize(item.fileSize)}</span>
         </div>
         <div class="detail-row">
-            <span class="detail-label">Upload Date:</span>
-            <span class="detail-value">${Utils.formatDate(item.uploadDate)}</span>
+            <span class="detail-label">Uploaded:</span>
+            <span class="detail-value">${Utils.formatDate(item.createdAt)}</span>
         </div>
         <div class="detail-row">
             <span class="detail-label">Description:</span>
-            <span class="detail-value">${escapeHtml(item.description)}</span>
+            <span class="detail-value">${Utils.escapeHtml(item.description)}</span>
         </div>
+        ${tags.length > 0 ? `
+            <div class="detail-row">
+                <span class="detail-label">Tags:</span>
+                <span class="detail-value">${tags.map(tag => Utils.escapeHtml(tag)).join(', ')}</span>
+            </div>
+        ` : ''}
     `;
     
-    DOM.mediaDetails.innerHTML = detailsHTML;
-    
-    // Show modal
     DOM.viewModal.classList.add('show');
 }
 
@@ -689,21 +1160,50 @@ function openViewModal(id) {
  */
 function closeViewModal() {
     DOM.viewModal.classList.remove('show');
-    DOM.mediaPreview.innerHTML = '';
-    DOM.mediaDetails.innerHTML = '';
+    AppState.currentViewId = null;
 }
 
 /**
- * Open edit modal for a media item
- * @param {string} id - Media item ID
+ * Handle download
+ */
+async function handleDownload() {
+    if (!AppState.currentViewId) return;
+    
+    try {
+        const item = AppState.mediaItems.find(item => item._id === AppState.currentViewId);
+        const blob = await API.downloadMedia(AppState.currentViewId);
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = item.originalName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        Toast.success('Download started');
+    } catch (error) {
+        console.error('Download failed:', error);
+        Toast.error('Download failed');
+    }
+}
+
+/**
+ * Open edit modal
  */
 function openEditModal(id) {
-    const item = AppState.mediaItems.find(item => item.id === id);
+    const item = AppState.mediaItems.find(item => item._id === id);
     if (!item) return;
     
     AppState.currentEditId = id;
+    
     DOM.editDescriptionInput.value = item.description;
+    DOM.editTagsInput.value = (item.tags || []).join(', ');
+    
     updateEditCharCount();
+    updateEditTagsPreview();
+    
     DOM.editModal.classList.add('show');
     DOM.editDescriptionInput.focus();
 }
@@ -712,9 +1212,43 @@ function openEditModal(id) {
  * Close edit modal
  */
 function closeEditModal() {
-    AppState.currentEditId = null;
     DOM.editModal.classList.remove('show');
-    DOM.editDescriptionInput.value = '';
+    AppState.currentEditId = null;
+}
+
+/**
+ * Update edit character count
+ */
+function updateEditCharCount() {
+    const count = DOM.editDescriptionInput.value.length;
+    DOM.editCharCount.textContent = `${count}/500`;
+    DOM.editCharCount.style.color = count > 450 ? 'var(--error-color)' : 'var(--gray-500)';
+}
+
+/**
+ * Update edit tags preview
+ */
+function updateEditTagsPreview() {
+    const tags = Utils.parseTags(DOM.editTagsInput.value);
+    
+    DOM.editTagsPreview.innerHTML = tags.map(tag => `
+        <span class="tag-item">
+            ${Utils.escapeHtml(tag)}
+            <button type="button" class="tag-remove" onclick="removeEditTag('${tag}')">
+                <i class="fas fa-times"></i>
+            </button>
+        </span>
+    `).join('');
+}
+
+/**
+ * Remove edit tag
+ */
+function removeEditTag(tagToRemove) {
+    const currentTags = Utils.parseTags(DOM.editTagsInput.value);
+    const newTags = currentTags.filter(tag => tag !== tagToRemove);
+    DOM.editTagsInput.value = newTags.join(', ');
+    updateEditTagsPreview();
 }
 
 /**
@@ -723,47 +1257,108 @@ function closeEditModal() {
 async function handleSaveEdit() {
     if (!AppState.currentEditId) return;
     
-    const newDescription = DOM.editDescriptionInput.value.trim();
-    
-    if (!newDescription) {
-        Utils.showMessage('Description cannot be empty.');
-        return;
-    }
-    
-    if (newDescription.length > 500) {
-        Utils.showMessage('Description must be 500 characters or less.');
+    const description = DOM.editDescriptionInput.value.trim();
+    if (!description) {
+        Toast.error('Description cannot be empty');
         return;
     }
     
     try {
-        await mockAPI.updateMedia(AppState.currentEditId, { description: newDescription });
+        const tags = Utils.parseTags(DOM.editTagsInput.value);
+        
+        const response = await API.updateMedia(AppState.currentEditId, {
+            description,
+            tags
+        });
+        
+        // Update local state
+        const index = AppState.mediaItems.findIndex(item => item._id === AppState.currentEditId);
+        if (index !== -1) {
+            AppState.mediaItems[index] = response.media;
+        }
+        
         closeEditModal();
-        await renderGallery();
-        Utils.showMessage('Description updated successfully!', 'success');
+        filterAndSortMedia();
+        renderGallery();
+        
+        Toast.success('Media updated successfully');
     } catch (error) {
-        console.error('Failed to update description:', error);
-        Utils.showMessage('Failed to update description. Please try again.');
+        console.error('Update failed:', error);
+        Toast.error('Update failed. Please try again.');
     }
 }
 
 /**
- * Handle delete media item
- * @param {string} id - Media item ID
+ * Open delete modal
  */
-async function handleDelete(id) {
-    const item = AppState.mediaItems.find(item => item.id === id);
+function openDeleteModal(id) {
+    const item = AppState.mediaItems.find(item => item._id === id);
     if (!item) return;
     
-    if (!confirm(`Are you sure you want to delete "${item.fileName}"?`)) {
-        return;
-    }
+    AppState.currentDeleteId = id;
+    DOM.deleteFilename.textContent = item.originalName;
+    DOM.deleteModal.classList.add('show');
+}
+
+/**
+ * Close delete modal
+ */
+function closeDeleteModal() {
+    DOM.deleteModal.classList.remove('show');
+    AppState.currentDeleteId = null;
+}
+
+/**
+ * Handle confirm delete
+ */
+async function handleConfirmDelete() {
+    if (!AppState.currentDeleteId) return;
     
     try {
-        await mockAPI.deleteMedia(id);
-        await renderGallery();
-        Utils.showMessage('Media item deleted successfully!', 'success');
+        await API.deleteMedia(AppState.currentDeleteId);
+        
+        // Remove from local state
+        AppState.mediaItems = AppState.mediaItems.filter(item => item._id !== AppState.currentDeleteId);
+        
+        closeDeleteModal();
+        updateStats();
+        filterAndSortMedia();
+        renderGallery();
+        
+        Toast.success('Media deleted successfully');
     } catch (error) {
-        console.error('Failed to delete media item:', error);
-        Utils.showMessage('Failed to delete media item. Please try again.');
+        console.error('Delete failed:', error);
+        Toast.error('Delete failed. Please try again.');
     }
 }
+
+/**
+ * Close all modals
+ */
+function closeAllModals() {
+    closeEditModal();
+    closeViewModal();
+    closeDeleteModal();
+}
+
+/**
+ * Handle keyboard shortcuts
+ */
+function handleKeyboard(e) {
+    if (e.key === 'Escape') {
+        closeAllModals();
+    }
+}
+
+/**
+ * Hide messages
+ */
+function hideMessages() {
+    DOM.uploadError.style.display = 'none';
+    DOM.uploadSuccess.style.display = 'none';
+}
+
+// Global functions for onclick handlers
+window.removeFile = removeFile;
+window.removeTag = removeTag;
+window.removeEditTag = removeEditTag;

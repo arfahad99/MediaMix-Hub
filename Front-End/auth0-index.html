@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth0 Integration - MediaMix Hub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .card-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        .btn.primary {
+            background: #28a745;
+        }
+        .btn.primary:hover {
+            background: #218838;
+        }
+        .btn.secondary {
+            background: #6c757d;
+        }
+        .btn.secondary:hover {
+            background: #5a6268;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🔐</div>
+            <h1>Auth0 Integration for MediaMix Hub</h1>
+            <p>Complete social media authentication setup and testing</p>
+        </div>
+
+        <div class="status info">
+            <strong>🎯 Goal:</strong> Set up Auth0 so users can login with Google, GitHub, and other social media accounts.
+        </div>
+
+        <div class="grid">
+            <!-- Setup Wizard -->
+            <div class="card">
+                <div class="card-title">🚀 Setup Wizard</div>
+                <div class="card-description">
+                    Step-by-step guided setup for Auth0 integration. Perfect for first-time setup.
+                </div>
+                <a href="setup-auth0.html" class="btn primary">Start Setup Wizard</a>
+            </div>
+
+            <!-- Test Integration -->
+            <div class="card">
+                <div class="card-title">🧪 Test Integration</div>
+                <div class="card-description">
+                    Test your Auth0 configuration and verify everything is working correctly.
+                </div>
+                <a href="test-auth0.html" class="btn">Test Configuration</a>
+            </div>
+
+            <!-- Login Page -->
+            <div class="card">
+                <div class="card-title">🔑 Login Page</div>
+                <div class="card-description">
+                    Try the actual login page with social media authentication buttons.
+                </div>
+                <a href="login-backend.html" class="btn">Go to Login</a>
+            </div>
+
+            <!-- Main Application -->
+            <div class="card">
+                <div class="card-title">📱 MediaMix Hub</div>
+                <div class="card-description">
+                    Access the main MediaMix Hub application (requires authentication).
+                </div>
+                <a href="index-backend.html" class="btn">Open App</a>
+            </div>
+
+            <!-- Session Testing -->
+            <div class="card">
+                <div class="card-title">⏱️ Session Testing</div>
+                <div class="card-description">
+                    Test session management and token validation features.
+                </div>
+                <a href="test-session.html" class="btn secondary">Test Sessions</a>
+            </div>
+
+            <!-- Backend Testing -->
+            <div class="card">
+                <div class="card-title">🔧 Backend Testing</div>
+                <div class="card-description">
+                    Test backend API connections and database functionality.
+                </div>
+                <a href="test-backend.html" class="btn secondary">Test Backend</a>
+            </div>
+        </div>
+
+        <div class="status warning">
+            <strong>⚠️ Before You Start:</strong>
+            <ul>
+                <li>Make sure both backend (port 5000) and frontend (port 3000) servers are running</li>
+                <li>You'll need to create a free Auth0 account</li>
+                <li>Have your Google/GitHub developer accounts ready for social login setup</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📚 Documentation & Guides</div>
+            <div class="card-description">
+                Comprehensive guides and checklists for Auth0 integration.
+            </div>
+            <a href="../AUTH0_SETUP.md" class="btn secondary">Full Setup Guide</a>
+            <a href="../AUTH0_INTEGRATION_CHECKLIST.md" class="btn secondary">Integration Checklist</a>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🔄 Quick Status Check</div>
+            <div class="card-description">
+                Check if your servers are running and ready for Auth0 integration.
+            </div>
+            <button class="btn" onclick="checkStatus()">Check Server Status</button>
+            <div id="statusResult"></div>
+        </div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            const statusDiv = document.getElementById('statusResult');
+            statusDiv.innerHTML = '<p>🔄 Checking server status...</p>';
+            
+            let status = [];
+            
+            // Check frontend server
+            try {
+                const frontendResponse = await fetch('/');
+                if (frontendResponse.ok) {
+                    status.push('✅ Frontend server (port 3000) - Running');
+                } else {
+                    status.push('❌ Frontend server (port 3000) - Error');
+                }
+            } catch (error) {
+                status.push('❌ Frontend server (port 3000) - Not accessible');
+            }
+            
+            // Check backend server
+            try {
+                const backendResponse = await fetch('http://localhost:5000/api/health');
+                const data = await backendResponse.json();
+                if (data.success) {
+                    status.push('✅ Backend server (port 5000) - Running');
+                    status.push(`ℹ️ Environment: ${data.environment}`);
+                } else {
+                    status.push('❌ Backend server (port 5000) - Error');
+                }
+            } catch (error) {
+                status.push('❌ Backend server (port 5000) - Not accessible');
+            }
+            
+            // Check Auth0 configuration
+            if (typeof AUTH0_CONFIG !== 'undefined') {
+                if (AUTH0_CONFIG.domain !== 'your-auth0-domain.auth0.com') {
+                    status.push('✅ Auth0 configuration - Updated');
+                } else {
+                    status.push('⚠️ Auth0 configuration - Using placeholder values');
+                }
+            } else {
+                status.push('❌ Auth0 configuration - Not loaded');
+            }
+            
+            statusDiv.innerHTML = `
+                <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                    ${status.map(s => `<p style="margin: 5px 0;">${s}</p>`).join('')}
+                </div>
+            `;
+        }
+        
+        // Auto-check status on page load
+        window.addEventListener('load', () => {
+            setTimeout(checkStatus, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth0 Setup Wizard - MediaMix Hub</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 10px; 
+            padding: 30px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .step { 
+            margin: 30px 0; 
+            padding: 20px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .step.active { 
+            border-color: #667eea; 
+            background: #e3f2fd;
+        }
+        .step.completed { 
+            border-color: #28a745; 
+            background: #d4edda;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        .step.completed .step-number {
+            background: #28a745;
+        }
+        .step-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .code-block {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.danger {
+            background: #dc3545;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Auth0 Setup Wizard for MediaMix Hub</h1>
+        <p>This wizard will guide you through setting up Auth0 social media authentication step by step.</p>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <p id="progressText">Step 0 of 6 - Getting Started</p>
+
+        <!-- Step 1: Auth0 Account -->
+        <div class="step active" id="step1">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <div class="step-title">Create Auth0 Account & Application</div>
+            </div>
+            <p>First, you need to create an Auth0 account and application.</p>
+            <button class="btn" onclick="openAuth0Signup()">Open Auth0 Signup</button>
+            <div class="status info">
+                <strong>Instructions:</strong>
+                <ol>
+                    <li>Click the button above to open Auth0 signup</li>
+                    <li>Create a free account</li>
+                    <li>Go to Applications → Create Application</li>
+                    <li>Name: "MediaMix Hub", Type: "Single Page Web Applications"</li>
+                    <li>Click "Create"</li>
+                </ol>
+            </div>
+            <button class="btn success" onclick="completeStep(1)">✅ I've created my Auth0 application</button>
+        </div>
+
+        <!-- Step 2: Get Credentials -->
+        <div class="step" id="step2">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <div class="step-title">Get Auth0 Credentials</div>
+            </div>
+            <p>Copy your Auth0 application credentials:</p>
+            <div class="input-group">
+                <label>Auth0 Domain (e.g., dev-xyz.us.auth0.com):</label>
+                <input type="text" id="auth0Domain" placeholder="your-domain.auth0.com">
+            </div>
+            <div class="input-group">
+                <label>Client ID:</label>
+                <input type="text" id="auth0ClientId" placeholder="your-client-id">
+            </div>
+            <div class="input-group">
+                <label>Client Secret:</label>
+                <input type="text" id="auth0ClientSecret" placeholder="your-client-secret">
+            </div>
+            <button class="btn" onclick="openAuth0Dashboard()">Open Auth0 Dashboard</button>
+            <button class="btn success" onclick="saveCredentials()">💾 Save Credentials</button>
+        </div>
+
+        <!-- Step 3: Configure URLs -->
+        <div class="step" id="step3">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <div class="step-title">Configure Application URLs</div>
+            </div>
+            <p>Add these URLs to your Auth0 application settings:</p>
+            <div class="code-block">
+<strong>Allowed Callback URLs:</strong>
+http://localhost:3000/auth/success,
+http://localhost:5000/api/auth0/callback
+
+<strong>Allowed Logout URLs:</strong>
+http://localhost:3000/login-backend.html
+
+<strong>Allowed Web Origins:</strong>
+http://localhost:3000
+
+<strong>Allowed Origins (CORS):</strong>
+http://localhost:3000
+            </div>
+            <button class="btn" onclick="copyToClipboard('callback-urls')">📋 Copy Callback URLs</button>
+            <button class="btn success" onclick="completeStep(3)">✅ URLs configured in Auth0</button>
+        </div>
+
+        <!-- Step 4: Social Connections -->
+        <div class="step" id="step4">
+            <div class="step-header">
+                <div class="step-number">4</div>
+                <div class="step-title">Setup Social Connections</div>
+            </div>
+            <p>Enable social login providers:</p>
+            <div class="status info">
+                <strong>Google OAuth:</strong>
+                <ol>
+                    <li>Go to Auth0 → Authentication → Social → Google</li>
+                    <li>Toggle "Enable" to ON</li>
+                    <li>Create Google OAuth app at <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
+                    <li>Add redirect URI: <code>https://YOUR-AUTH0-DOMAIN/login/callback</code></li>
+                    <li>Copy Client ID/Secret to Auth0</li>
+                </ol>
+            </div>
+            <div class="status info">
+                <strong>GitHub OAuth:</strong>
+                <ol>
+                    <li>Go to Auth0 → Authentication → Social → GitHub</li>
+                    <li>Toggle "Enable" to ON</li>
+                    <li>Create GitHub OAuth app at <a href="https://github.com/settings/developers" target="_blank">GitHub Developer Settings</a></li>
+                    <li>Add callback URL: <code>https://YOUR-AUTH0-DOMAIN/login/callback</code></li>
+                    <li>Copy Client ID/Secret to Auth0</li>
+                </ol>
+            </div>
+            <button class="btn" onclick="openGoogleConsole()">Open Google Console</button>
+            <button class="btn" onclick="openGitHubSettings()">Open GitHub Settings</button>
+            <button class="btn success" onclick="completeStep(4)">✅ Social connections configured</button>
+        </div>
+
+        <!-- Step 5: Update Configuration Files -->
+        <div class="step" id="step5">
+            <div class="step-header">
+                <div class="step-number">5</div>
+                <div class="step-title">Update Configuration Files</div>
+            </div>
+            <p>Your configuration files will be automatically updated:</p>
+            <div id="configPreview"></div>
+            <button class="btn" onclick="generateConfig()">🔧 Generate Configuration</button>
+            <button class="btn" onclick="downloadConfig()">💾 Download Config Files</button>
+            <button class="btn success" onclick="completeStep(5)">✅ Configuration files updated</button>
+        </div>
+
+        <!-- Step 6: Test Integration -->
+        <div class="step" id="step6">
+            <div class="step-header">
+                <div class="step-number">6</div>
+                <div class="step-title">Test Integration</div>
+            </div>
+            <p>Test your Auth0 integration:</p>
+            <button class="btn" onclick="testAuth0Config()">🧪 Test Configuration</button>
+            <button class="btn" onclick="testSocialLogin()">🔐 Test Social Login</button>
+            <div id="testResults"></div>
+            <button class="btn success" onclick="completeStep(6)">🎉 Integration Complete!</button>
+        </div>
+
+        <!-- Final Success -->
+        <div class="step" id="stepComplete" style="display: none;">
+            <div class="step-header">
+                <div class="step-number">✅</div>
+                <div class="step-title">Setup Complete!</div>
+            </div>
+            <div class="status success">
+                <h3>🎉 Congratulations!</h3>
+                <p>Your Auth0 social media authentication is now set up and ready to use!</p>
+                <p><strong>What's working now:</strong></p>
+                <ul>
+                    <li>✅ Users can login with Google</li>
+                    <li>✅ Users can login with GitHub</li>
+                    <li>✅ Secure token handling</li>
+                    <li>✅ User profile synchronization</li>
+                </ul>
+            </div>
+            <button class="btn" onclick="goToApp()">🚀 Go to MediaMix Hub</button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let credentials = {};
+
+        function updateProgress() {
+            const progress = ((currentStep - 1) / 6) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `Step ${currentStep - 1} of 6 - ${getStepTitle(currentStep - 1)}`;
+        }
+
+        function getStepTitle(step) {
+            const titles = [
+                'Getting Started',
+                'Auth0 Account Setup',
+                'Credentials Collection',
+                'URL Configuration',
+                'Social Connections',
+                'File Configuration',
+                'Testing & Completion'
+            ];
+            return titles[step] || 'Complete';
+        }
+
+        function completeStep(step) {
+            document.getElementById(`step${step}`).classList.add('completed');
+            document.getElementById(`step${step}`).classList.remove('active');
+            
+            if (step < 6) {
+                document.getElementById(`step${step + 1}`).classList.add('active');
+                currentStep = step + 1;
+            } else {
+                document.getElementById('stepComplete').style.display = 'block';
+                currentStep = 7;
+            }
+            updateProgress();
+        }
+
+        function openAuth0Signup() {
+            window.open('https://auth0.com/signup', '_blank');
+        }
+
+        function openAuth0Dashboard() {
+            window.open('https://manage.auth0.com/dashboard', '_blank');
+        }
+
+        function openGoogleConsole() {
+            window.open('https://console.cloud.google.com', '_blank');
+        }
+
+        function openGitHubSettings() {
+            window.open('https://github.com/settings/developers', '_blank');
+        }
+
+        function saveCredentials() {
+            credentials.domain = document.getElementById('auth0Domain').value;
+            credentials.clientId = document.getElementById('auth0ClientId').value;
+            credentials.clientSecret = document.getElementById('auth0ClientSecret').value;
+
+            if (credentials.domain && credentials.clientId && credentials.clientSecret) {
+                localStorage.setItem('auth0Credentials', JSON.stringify(credentials));
+                alert('✅ Credentials saved! Moving to next step.');
+                completeStep(2);
+            } else {
+                alert('❌ Please fill in all credential fields.');
+            }
+        }
+
+        function copyToClipboard(type) {
+            const text = `http://localhost:3000/auth/success,http://localhost:5000/api/auth0/callback`;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('📋 Callback URLs copied to clipboard!');
+            });
+        }
+
+        function generateConfig() {
+            const creds = JSON.parse(localStorage.getItem('auth0Credentials') || '{}');
+            
+            const envConfig = `# Auth0 Configuration
+AUTH0_DOMAIN=${creds.domain}
+AUTH0_CLIENT_ID=${creds.clientId}
+AUTH0_CLIENT_SECRET=${creds.clientSecret}
+AUTH0_AUDIENCE=https://${creds.domain}/api/v2/
+AUTH0_CALLBACK_URL=http://localhost:5000/api/auth0/callback
+AUTH0_LOGOUT_URL=http://localhost:3000/login-backend.html`;
+
+            const jsConfig = `const AUTH0_CONFIG = {
+    domain: '${creds.domain}',
+    clientId: '${creds.clientId}',
+    audience: 'https://${creds.domain}/api/v2/',
+    redirectUri: window.location.origin + '/auth/success',
+    logoutUri: window.location.origin + '/login-backend.html',
+    scope: 'openid profile email'
+};`;
+
+            document.getElementById('configPreview').innerHTML = `
+                <h4>Backend .env configuration:</h4>
+                <div class="code-block">${envConfig}</div>
+                <h4>Frontend auth0-config.js:</h4>
+                <div class="code-block">${jsConfig}</div>
+            `;
+        }
+
+        function downloadConfig() {
+            const creds = JSON.parse(localStorage.getItem('auth0Credentials') || '{}');
+            
+            // Create downloadable files
+            const envContent = `# Add these lines to your backend/.env file
+AUTH0_DOMAIN=${creds.domain}
+AUTH0_CLIENT_ID=${creds.clientId}
+AUTH0_CLIENT_SECRET=${creds.clientSecret}
+AUTH0_AUDIENCE=https://${creds.domain}/api/v2/
+AUTH0_CALLBACK_URL=http://localhost:5000/api/auth0/callback
+AUTH0_LOGOUT_URL=http://localhost:3000/login-backend.html`;
+
+            const blob = new Blob([envContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'auth0-config.env';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function testAuth0Config() {
+            // Test configuration
+            window.open('http://localhost:3000/test-auth0.html', '_blank');
+        }
+
+        function testSocialLogin() {
+            // Test social login
+            window.open('http://localhost:3000/login-backend.html', '_blank');
+        }
+
+        function goToApp() {
+            window.open('http://localhost:3000/index-backend.html', '_blank');
+        }
+
+        // Initialize
+        updateProgress();
+
+        // Load saved credentials
+        const savedCreds = localStorage.getItem('auth0Credentials');
+        if (savedCreds) {
+            const creds = JSON.parse(savedCreds);
+            document.getElementById('auth0Domain').value = creds.domain || '';
+            document.getElementById('auth0ClientId').value = creds.clientId || '';
+            document.getElementById('auth0ClientSecret').value = creds.clientSecret || '';
+        }
+    </script>
+</body>
+</html>
