@@ -93,7 +93,7 @@ router.get('/:id', protect, async (req, res) => {
 });
 
 // Upload media
-router.post('/upload', protect, ...uploadSingle('file'), async (req, res) => {
+router.post('/upload', protect, ...uploadSingle('media'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({

@@ -18,20 +18,36 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
       const response = await apiClient.getMedia();
       
       if (response.success && response.media) {
-        const items: MediaItem[] = response.media.map(item => ({
-          id: item._id || item.id,
-          fileName: item.originalName || item.fileName,
-          fileType: item.fileType,
-          fileSize: item.fileSize,
-          description: item.description,
-          tags: item.tags || [],
-          uploadDate: item.createdAt || item.uploadDate,
-          mimeType: item.mimeType,
-          url: apiClient.getMediaUrl(item._id || item.id)
-        }));
+        const items: MediaItem[] = await Promise.all(
+          response.media.map(async (item: any) => {
+            let blobUrl = '';
+            try {
+              // Create blob URL for authenticated access
+              blobUrl = await apiClient.getMediaBlob(item._id);
+            } catch (error) {
+              console.error('Failed to create blob URL for', item.originalName, error);
+              // Fallback to direct URL (will likely fail but better than nothing)
+              blobUrl = apiClient.getMediaUrl(item._id);
+            }
+
+            return {
+              id: item._id,
+              fileName: item.originalName,
+              fileType: item.fileType,
+              fileSize: item.fileSize,
+              description: item.description,
+              tags: item.tags || [],
+              uploadDate: item.createdAt,
+              mimeType: item.mimeType,
+              url: blobUrl
+            };
+          })
+        );
         
         set({ items, isLoading: false });
         get().filterAndSort();
+      } else {
+        set({ items: [], isLoading: false });
       }
     } catch (error) {
       console.error('Failed to load media:', error);
@@ -111,7 +127,17 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
       const response = await apiClient.getMediaStats();
       
       if (response.success && response.stats) {
-        set({ stats: response.stats });
+        // Transform the stats to match our expected format
+        const transformedStats = {
+          total: response.stats.total,
+          recentUploads: response.stats.recentUploads,
+          byType: {
+            image: (response.stats.byType as any).image?.count || 0,
+            video: (response.stats.byType as any).video?.count || 0,
+            audio: (response.stats.byType as any).audio?.count || 0
+          }
+        };
+        set({ stats: transformedStats });
       }
     } catch (error) {
       console.error('Failed to load stats:', error);
@@ -127,10 +153,12 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
         new Date(item.uploadDate) > weekAgo
       ).length;
       
-      const byType = items.reduce((acc, item) => {
-        acc[item.fileType] = (acc[item.fileType] || 0) + 1;
-        return acc;
-      }, { image: 0, video: 0, audio: 0 } as Record<string, number>);
+      const byType: { image: number; video: number; audio: number } = { image: 0, video: 0, audio: 0 };
+      items.forEach(item => {
+        if (item.fileType in byType) {
+          byType[item.fileType]++;
+        }
+      });
       
       set({
         stats: {

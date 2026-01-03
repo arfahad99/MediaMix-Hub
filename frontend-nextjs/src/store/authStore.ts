@@ -88,6 +88,7 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           console.error('Auth check failed:', error);
           get().logout();
+          set({ isLoading: false });
         }
       },
 

@@ -9,10 +9,12 @@ const router = express.Router();
 // Register
 router.post('/register', async (req, res) => {
     try {
+        console.log('Registration request received:', req.body);
         const { username, email, password } = req.body;
 
         // Validation
         if (!username || !email || !password) {
+            console.log('Missing required fields:', { username: !!username, email: !!email, password: !!password });
             return res.status(400).json({
                 success: false,
                 message: 'Please provide all required fields'
@@ -20,6 +22,7 @@ router.post('/register', async (req, res) => {
         }
 
         if (password.length < 6) {
+            console.log('Password too short:', password.length);
             return res.status(400).json({
                 success: false,
                 message: 'Password must be at least 6 characters long'
@@ -29,6 +32,7 @@ router.post('/register', async (req, res) => {
         // Validate username format
         const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
         if (!usernameRegex.test(username)) {
+            console.log('Invalid username format:', username);
             return res.status(400).json({
                 success: false,
                 message: 'Username must be 3-20 characters long and contain only letters, numbers, and underscores'
@@ -36,8 +40,10 @@ router.post('/register', async (req, res) => {
         }
 
         // Check if user exists with email
+        console.log('Checking for existing email:', email.toLowerCase());
         const existingUserByEmail = await User.findOne({ email: email.toLowerCase() });
         if (existingUserByEmail) {
+            console.log('Email already exists:', email);
             return res.status(400).json({
                 success: false,
                 message: 'User already exists with this email'
@@ -45,27 +51,28 @@ router.post('/register', async (req, res) => {
         }
 
         // Check if user exists with username
+        console.log('Checking for existing username:', username.toLowerCase());
         const existingUserByUsername = await User.findOne({ username: username.toLowerCase() });
         if (existingUserByUsername) {
+            console.log('Username already exists:', username);
             return res.status(400).json({
                 success: false,
                 message: 'Username is already taken'
             });
         }
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Create user
+        // Create user (password will be hashed by pre-save middleware)
+        console.log('Creating new user...');
         const user = new User({
             username: username.toLowerCase().trim(),
             name: username.trim(), // Use username as display name initially
             email: email.toLowerCase().trim(),
-            password: hashedPassword
+            password: password // Let the pre-save middleware handle hashing
         });
 
+        console.log('Saving user to database...');
         await user.save();
+        console.log('User saved successfully:', user._id);
 
         // Generate JWT token
         const token = jwt.sign(
@@ -74,6 +81,7 @@ router.post('/register', async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        console.log('Registration successful for user:', user.username);
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
@@ -94,12 +102,14 @@ router.post('/register', async (req, res) => {
         if (error.code === 11000) {
             const field = Object.keys(error.keyPattern)[0];
             const message = field === 'email' ? 'Email is already registered' : 'Username is already taken';
+            console.log('Duplicate key error:', message);
             return res.status(400).json({
                 success: false,
                 message
             });
         }
         
+        console.log('Server error during registration:', error.message);
         res.status(500).json({
             success: false,
             message: 'Server error during registration'
@@ -110,10 +120,12 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
     try {
+        console.log('Login attempt:', { identifier: req.body.identifier, passwordLength: req.body.password?.length });
         const { identifier, password } = req.body;
 
         // Validation
         if (!identifier || !password) {
+            console.log('Missing credentials');
             return res.status(400).json({
                 success: false,
                 message: 'Please provide username/email and password'
@@ -121,8 +133,12 @@ router.post('/login', async (req, res) => {
         }
 
         // Find user by email or username
+        console.log('Looking for user with identifier:', identifier);
         const user = await User.findByIdentifier(identifier).select('+password');
+        console.log('User found:', user ? { id: user._id, username: user.username, email: user.email, hasPassword: !!user.password } : 'No user found');
+        
         if (!user) {
+            console.log('User not found for identifier:', identifier);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
@@ -130,8 +146,12 @@ router.post('/login', async (req, res) => {
         }
 
         // Check password
+        console.log('Comparing passwords...');
         const isMatch = await bcrypt.compare(password, user.password);
+        console.log('Password match result:', isMatch);
+        
         if (!isMatch) {
+            console.log('Password mismatch for user:', user.username);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
@@ -149,6 +169,7 @@ router.post('/login', async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        console.log('Login successful for user:', user.username);
         res.json({
             success: true,
             message: 'Login successful',

@@ -11,8 +11,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
-  const { loadMedia, loadStats, items } = useMediaStore();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuthStore();
+  const { loadMedia, loadStats, items, isLoading: mediaLoading } = useMediaStore();
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -22,10 +22,14 @@ export default function HomePage() {
 
     if (isAuthenticated) {
       // Load initial data
-      loadMedia();
-      loadStats();
+      loadMedia().catch(error => {
+        console.error('Failed to load media:', error);
+      });
+      loadStats().catch(error => {
+        console.error('Failed to load stats:', error);
+      });
     }
-  }, [isAuthenticated, authLoading, router, loadMedia, loadStats]);
+  }, [isAuthenticated, authLoading, router, loadMedia, loadStats, user]);
 
   if (authLoading) {
     return (

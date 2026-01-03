@@ -14,7 +14,7 @@ class APIClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002/api';
     
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -56,17 +56,67 @@ class APIClient {
 
   private getToken(): string | null {
     if (typeof window === 'undefined') return null;
+    
+    // Try to get token from Zustand auth store first
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        if (parsed.state && parsed.state.token) {
+          return parsed.state.token;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing auth storage:', error);
+    }
+    
+    // Fallback to direct localStorage access
     return localStorage.getItem('authToken');
   }
 
   private setToken(token: string): void {
     if (typeof window === 'undefined') return;
+    
+    // Set in both locations for compatibility
     localStorage.setItem('authToken', token);
+    
+    // Update Zustand auth store if it exists
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        if (parsed.state) {
+          parsed.state.token = token;
+          parsed.state.isAuthenticated = true;
+          localStorage.setItem('auth-storage', JSON.stringify(parsed));
+        }
+      }
+    } catch (error) {
+      console.error('Error updating auth storage:', error);
+    }
   }
 
   private clearToken(): void {
     if (typeof window === 'undefined') return;
+    
+    // Clear from both locations
     localStorage.removeItem('authToken');
+    
+    // Clear from Zustand auth store if it exists
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        if (parsed.state) {
+          parsed.state.token = null;
+          parsed.state.isAuthenticated = false;
+          parsed.state.user = null;
+          localStorage.setItem('auth-storage', JSON.stringify(parsed));
+        }
+      }
+    } catch (error) {
+      console.error('Error clearing auth storage:', error);
+    }
   }
 
   // Auth endpoints
@@ -176,6 +226,17 @@ class APIClient {
   // Utility methods
   getMediaUrl(id: string): string {
     return `${this.baseURL}/media/${id}/file`;
+  }
+
+  async getMediaBlob(id: string): Promise<string> {
+    try {
+      const response = await this.client.get(`/media/${id}/file`, {
+        responseType: 'blob'
+      });
+      return URL.createObjectURL(response.data);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to load media file');
+    }
   }
 
   getDownloadUrl(id: string): string {

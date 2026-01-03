@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, User, Lock, Mail, Check } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, Mail } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { LoginFormData, RegisterFormData } from '@/types';
 import Button from '@/components/ui/Button';
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const { login, register, isAuthenticated, isLoading } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const loginForm = useForm<LoginFormData>();
@@ -82,15 +83,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="floating-shape"></div>
-        <div className="floating-shape"></div>
-        <div className="floating-shape"></div>
-        <div className="floating-shape"></div>
-        <div className="floating-shape"></div>
-      </div>
-
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center relative z-10">
         {/* Left Side - Auth Form */}
         <div className="w-full max-w-md mx-auto">
@@ -220,16 +212,16 @@ export default function LoginPage() {
                 <div>
                   <Input
                     label="Password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showRegisterPassword ? 'text' : 'password'}
                     placeholder="Create a password"
                     icon={<Lock className="w-5 h-5" />}
                     rightIcon={
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={() => setShowRegisterPassword(!showRegisterPassword)}
                         className="text-gray-400 hover:text-gray-600"
                       >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showRegisterPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     }
                     {...registerForm.register('password', { required: 'Password is required' })}
