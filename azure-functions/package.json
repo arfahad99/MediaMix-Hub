@@ -1,0 +1,30 @@
+{
+  "name": "mediamix-hub-functions",
+  "version": "1.0.0",
+  "description": "Azure Functions for MediaMix Hub - Image processing and AI features",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "prestart": "npm run build",
+    "start": "func start",
+    "test": "echo \"No tests yet...\"",
+    "deploy": "func azure functionapp publish mediamix-hub-functions"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0",
+    "@azure/storage-blob": "^12.17.0",
+    "@azure/cognitiveservices-computervision": "^8.2.0",
+    "@azure/ms-rest-azure-js": "^2.1.0",
+    "sharp": "^0.32.6",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@azure/functions-core-tools": "^4.0.5455",
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
