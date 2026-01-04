@@ -65,9 +65,9 @@ router.post('/register', async (req, res) => {
         console.log('Creating new user...');
         const user = new User({
             username: username.toLowerCase().trim(),
-            name: username.trim(), // Use username as display name initially
+            displayName: username.trim(), // Use username as display name initially
             email: email.toLowerCase().trim(),
-            password: password // Let the pre-save middleware handle hashing
+            passwordHash: password // Let the pre-save middleware handle hashing
         });
 
         console.log('Saving user to database...');
@@ -89,9 +89,9 @@ router.post('/register', async (req, res) => {
             user: {
                 id: user._id,
                 username: user.username,
-                name: user.name,
+                displayName: user.displayName,
                 email: user.email,
-                createdAt: user.createdAt
+                createdAt: user.registrationDate
             }
         });
 
@@ -134,8 +134,8 @@ router.post('/login', async (req, res) => {
 
         // Find user by email or username
         console.log('Looking for user with identifier:', identifier);
-        const user = await User.findByIdentifier(identifier).select('+password');
-        console.log('User found:', user ? { id: user._id, username: user.username, email: user.email, hasPassword: !!user.password } : 'No user found');
+        const user = await User.findByIdentifier(identifier).select('+passwordHash');
+        console.log('User found:', user ? { id: user._id, username: user.username, email: user.email, hasPassword: !!user.passwordHash } : 'No user found');
         
         if (!user) {
             console.log('User not found for identifier:', identifier);
@@ -147,7 +147,7 @@ router.post('/login', async (req, res) => {
 
         // Check password
         console.log('Comparing passwords...');
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await user.comparePassword(password);
         console.log('Password match result:', isMatch);
         
         if (!isMatch) {
@@ -177,10 +177,10 @@ router.post('/login', async (req, res) => {
             user: {
                 id: user._id,
                 username: user.username,
-                name: user.name,
+                displayName: user.displayName,
                 email: user.email,
                 lastLogin: user.lastLogin,
-                createdAt: user.createdAt
+                createdAt: user.registrationDate
             }
         });
 
@@ -196,7 +196,7 @@ router.post('/login', async (req, res) => {
 // Get user profile
 router.get('/profile', protect, async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId).select('-password');
+        const user = await User.findById(req.user.userId).select('-passwordHash');
         
         if (!user) {
             return res.status(404).json({
@@ -210,10 +210,10 @@ router.get('/profile', protect, async (req, res) => {
             user: {
                 id: user._id,
                 username: user.username,
-                name: user.name,
+                displayName: user.displayName,
                 email: user.email,
                 lastLogin: user.lastLogin,
-                createdAt: user.createdAt
+                createdAt: user.registrationDate
             }
         });
 
@@ -229,14 +229,14 @@ router.get('/profile', protect, async (req, res) => {
 // Update profile
 router.put('/profile', protect, async (req, res) => {
     try {
-        const { name, email } = req.body;
+        const { displayName, email } = req.body;
         const userId = req.user.userId;
 
         // Validation
-        if (!name || !email) {
+        if (!displayName || !email) {
             return res.status(400).json({
                 success: false,
-                message: 'Name and email are required'
+                message: 'Display name and email are required'
             });
         }
 
@@ -257,12 +257,12 @@ router.put('/profile', protect, async (req, res) => {
         const user = await User.findByIdAndUpdate(
             userId,
             {
-                name: name.trim(),
+                displayName: displayName.trim(),
                 email: email.toLowerCase().trim(),
                 updatedAt: new Date()
             },
             { new: true, runValidators: true }
-        ).select('-password');
+        ).select('-passwordHash');
 
         if (!user) {
             return res.status(404).json({
@@ -277,10 +277,10 @@ router.put('/profile', protect, async (req, res) => {
             user: {
                 id: user._id,
                 username: user.username,
-                name: user.name,
+                displayName: user.displayName,
                 email: user.email,
                 lastLogin: user.lastLogin,
-                createdAt: user.createdAt,
+                createdAt: user.registrationDate,
                 updatedAt: user.updatedAt
             }
         });
@@ -316,7 +316,7 @@ router.put('/change-password', protect, async (req, res) => {
         }
 
         // Find user
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).select('+passwordHash');
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -325,7 +325,7 @@ router.put('/change-password', protect, async (req, res) => {
         }
 
         // Check current password
-        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        const isMatch = await user.comparePassword(currentPassword);
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
@@ -333,12 +333,8 @@ router.put('/change-password', protect, async (req, res) => {
             });
         }
 
-        // Hash new password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        // Update password
-        user.password = hashedPassword;
+        // Update password (will be hashed by pre-save middleware)
+        user.passwordHash = newPassword;
         user.updatedAt = new Date();
         await user.save();
 

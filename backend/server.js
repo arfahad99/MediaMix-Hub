@@ -11,6 +11,8 @@ const { connectDB } = require('./config/database');
 const authRoutes = require('./routes/auth');
 const mediaRoutes = require('./routes/media');
 const userRoutes = require('./routes/user');
+const shareRoutes = require('./routes/share-new');
+const healthRoutes = require('./routes/health');
 const errorHandler = require('./middleware/errorHandler');
 
 // Initialize Express app
@@ -63,20 +65,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: 'MediaMix Hub API is running',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV
-    });
-});
-
 // API Routes
+app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/share', shareRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {

@@ -267,6 +267,17 @@ userSchema.statics.findByUserId = function(userId) {
     return this.findOne({ userId });
 };
 
+userSchema.statics.findByIdentifier = function(identifier) {
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    const isEmail = emailRegex.test(identifier);
+    
+    if (isEmail) {
+        return this.findOne({ email: identifier.toLowerCase() });
+    } else {
+        return this.findOne({ username: identifier.toLowerCase() });
+    }
+};
+
 // Remove sensitive data when converting to JSON
 userSchema.methods.toJSON = function() {
     const userObject = this.toObject();

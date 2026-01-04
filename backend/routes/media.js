@@ -133,15 +133,31 @@ router.post('/upload', protect, ...uploadSingle('media'), async (req, res) => {
         // Create media record
         const media = new Media({
             userId: req.user.userId,
-            originalName: req.file.originalname,
-            filename: req.file.filename,
-            path: req.file.path,
+            fileName: req.file.originalname,
+            filePath: req.file.publicUrl || req.file.path,
             mimeType: req.file.mimetype,
             fileSize: req.file.size,
             fileType,
             description: description.trim(),
-            tags: parsedTags.slice(0, 10) // Limit to 10 tags
+            tags: parsedTags.slice(0, 10), // Limit to 10 tags
+            metadata: {
+                uploadIP: req.ip,
+                userAgent: req.get('User-Agent'),
+                originalFileName: req.file.originalname,
+                source: 'web'
+            }
         });
+        
+        // Add Azure info if available
+        if (req.file.azureUrl) {
+            media.azureInfo = {
+                containerName: req.file.container || 'media-uploads',
+                blobName: req.file.blobName,
+                url: req.file.azureUrl,
+                etag: req.file.etag,
+                lastModified: req.file.lastModified
+            };
+        }
         
         await media.save();
         
@@ -238,7 +254,7 @@ router.delete('/:id', protect, async (req, res) => {
         
         // Delete file from filesystem
         try {
-            await fs.unlink(media.path);
+            await fs.unlink(media.filePath);
         } catch (fileError) {
             console.error('Error deleting file:', fileError);
             // Continue with database deletion even if file deletion fails
@@ -278,7 +294,7 @@ router.get('/:id/file', protect, async (req, res) => {
         
         // Check if file exists
         try {
-            await fs.access(media.path);
+            await fs.access(media.filePath);
         } catch (error) {
             return res.status(404).json({
                 success: false,
@@ -288,10 +304,10 @@ router.get('/:id/file', protect, async (req, res) => {
         
         // Set appropriate headers
         res.setHeader('Content-Type', media.mimeType);
-        res.setHeader('Content-Disposition', `inline; filename="${media.originalName}"`);
+        res.setHeader('Content-Disposition', `inline; filename="${media.fileName}"`);
         
         // Stream the file
-        res.sendFile(path.resolve(media.path));
+        res.sendFile(path.resolve(media.filePath));
         
     } catch (error) {
         console.error('Serve file error:', error);
@@ -319,7 +335,7 @@ router.get('/:id/download', protect, async (req, res) => {
         
         // Check if file exists
         try {
-            await fs.access(media.path);
+            await fs.access(media.filePath);
         } catch (error) {
             return res.status(404).json({
                 success: false,
@@ -329,10 +345,10 @@ router.get('/:id/download', protect, async (req, res) => {
         
         // Set download headers
         res.setHeader('Content-Type', media.mimeType);
-        res.setHeader('Content-Disposition', `attachment; filename="${media.originalName}"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${media.fileName}"`);
         
         // Stream the file
-        res.sendFile(path.resolve(media.path));
+        res.sendFile(path.resolve(media.filePath));
         
     } catch (error) {
         console.error('Download file error:', error);

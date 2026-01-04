@@ -11,7 +11,7 @@ router.get('/dashboard', protect, async (req, res) => {
         const userId = req.user.userId;
         
         // Get user info
-        const user = await User.findById(userId).select('-password');
+        const user = await User.findById(userId).select('-passwordHash');
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -35,7 +35,7 @@ router.get('/dashboard', protect, async (req, res) => {
         const recentUploads = await Media.find({ userId })
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('originalName fileType fileSize createdAt');
+            .select('fileName fileType fileSize createdAt');
         
         // Calculate total stats
         const totalFiles = mediaStats.reduce((sum, stat) => sum + stat.count, 0);
@@ -62,9 +62,9 @@ router.get('/dashboard', protect, async (req, res) => {
             dashboard: {
                 user: {
                     id: user._id,
-                    name: user.name,
+                    displayName: user.displayName,
                     email: user.email,
-                    memberSince: user.createdAt,
+                    memberSince: user.registrationDate,
                     lastLogin: user.lastLogin
                 },
                 stats: {
@@ -96,18 +96,18 @@ router.get('/activity', protect, async (req, res) => {
             .sort({ createdAt: -1, updatedAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit)
-            .select('originalName fileType createdAt updatedAt')
+            .select('fileName fileType createdAt updatedAt')
             .exec();
         
         // Format activities
         const formattedActivities = activities.map(media => ({
             id: media._id,
             type: 'media_upload',
-            description: `Uploaded ${media.originalName}`,
+            description: `Uploaded ${media.fileName}`,
             fileType: media.fileType,
             timestamp: media.createdAt,
             metadata: {
-                fileName: media.originalName,
+                fileName: media.fileName,
                 fileType: media.fileType
             }
         }));
@@ -212,7 +212,7 @@ router.delete('/account', protect, async (req, res) => {
         }
         
         // Verify password
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).select('+passwordHash');
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -220,8 +220,7 @@ router.delete('/account', protect, async (req, res) => {
             });
         }
         
-        const bcrypt = require('bcryptjs');
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
@@ -235,7 +234,7 @@ router.delete('/account', protect, async (req, res) => {
         
         for (const media of userMedia) {
             try {
-                await fs.unlink(media.path);
+                await fs.unlink(media.filePath);
             } catch (fileError) {
                 console.error('Error deleting file:', fileError);
             }
