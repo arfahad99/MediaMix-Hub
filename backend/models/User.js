@@ -2,7 +2,15 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-    // Basic user information
+    // Core user identification - matching your schema
+    userId: {
+        type: String,
+        required: true,
+        unique: true,
+        default: function() {
+            return this._id.toString();
+        }
+    },
     username: {
         type: String,
         required: [true, 'Username is required'],
@@ -12,12 +20,6 @@ const userSchema = new mongoose.Schema({
         minlength: [3, 'Username must be at least 3 characters long'],
         maxlength: [20, 'Username cannot exceed 20 characters'],
         match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores']
-    },
-    name: {
-        type: String,
-        required: [true, 'Name is required'],
-        trim: true,
-        maxlength: [100, 'Name cannot exceed 100 characters']
     },
     email: {
         type: String,
@@ -30,49 +32,52 @@ const userSchema = new mongoose.Schema({
             'Please provide a valid email address'
         ]
     },
-    password: {
+    displayName: {
+        type: String,
+        required: [true, 'Display name is required'],
+        trim: true,
+        maxlength: [100, 'Display name cannot exceed 100 characters']
+    },
+    passwordHash: {
         type: String,
         required: function() {
-            // Password is only required if not using Auth0
             return !this.auth0Id;
         },
         minlength: [6, 'Password must be at least 6 characters long'],
-        select: false // Don't include password in queries by default
+        select: false
+    },
+    registrationDate: {
+        type: Date,
+        default: Date.now,
+        required: true
     },
     
-    // Auth0 integration
+    // Profile and preferences
+    role: {
+        type: String,
+        enum: ['user', 'admin', 'moderator'],
+        default: 'user'
+    },
+    status: {
+        type: String,
+        enum: ['active', 'inactive', 'suspended', 'pending'],
+        default: 'active'
+    },
+    
+    // Authentication and security
     auth0Id: {
         type: String,
-        sparse: true, // Allow multiple null values but unique non-null values
+        sparse: true,
         index: true
     },
     authProvider: {
         type: String,
-        enum: ['local', 'auth0'],
+        enum: ['local', 'auth0', 'google', 'github'],
         default: 'local'
-    },
-    profilePicture: {
-        type: String,
-        default: null
     },
     isEmailVerified: {
         type: Boolean,
         default: false
-    },
-    
-    // User profile
-    avatar: {
-        type: String,
-        default: null
-    },
-    role: {
-        type: String,
-        enum: ['user', 'admin'],
-        default: 'user'
-    },
-    isActive: {
-        type: Boolean,
-        default: true
     },
     lastLogin: {
         type: Date,
@@ -82,72 +87,80 @@ const userSchema = new mongoose.Schema({
     // Storage and media tracking
     mediaCount: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0
     },
     storageUsed: {
         type: Number,
-        default: 0 // in bytes
+        default: 0,
+        min: 0
     },
     storageLimit: {
         type: Number,
         default: 1073741824 // 1GB in bytes
     },
     
-    // User preferences
+    // User preferences and settings
     preferences: {
         theme: {
             type: String,
             enum: ['light', 'dark', 'auto'],
             default: 'auto'
         },
-        notifications: {
-            email: {
-                type: Boolean,
-                default: true
-            },
-            uploads: {
-                type: Boolean,
-                default: true
-            }
-        },
         language: {
             type: String,
             default: 'en'
         },
-        defaultView: {
+        notifications: {
+            email: { type: Boolean, default: true },
+            uploads: { type: Boolean, default: true },
+            shares: { type: Boolean, default: true }
+        },
+        privacy: {
+            profilePublic: { type: Boolean, default: false },
+            showActivity: { type: Boolean, default: true }
+        }
+    },
+    
+    // Profile information
+    profile: {
+        avatar: String,
+        bio: {
             type: String,
-            enum: ['grid', 'list'],
-            default: 'grid'
+            maxlength: [500, 'Bio cannot exceed 500 characters']
+        },
+        website: String,
+        location: String,
+        timezone: {
+            type: String,
+            default: 'UTC'
         }
     },
     
-    // Azure Cosmos DB optimizations
-    userId: {
-        type: String,
-        default: function() {
-            return this._id.toString();
-        }
-    },
-    
-    // Metadata for tracking and analytics
+    // Analytics and tracking metadata
     metadata: {
         createdIP: String,
         lastLoginIP: String,
         userAgent: String,
         source: {
             type: String,
+            enum: ['web', 'mobile', 'api'],
             default: 'web'
         },
         loginCount: {
             type: Number,
             default: 0
+        },
+        referrer: String,
+        deviceInfo: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
         }
     }
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-    // Azure Cosmos DB optimizations
     collection: 'users',
     autoIndex: true,
     strict: true,
@@ -167,16 +180,23 @@ userSchema.virtual('isStorageFull').get(function() {
     return this.storageUsed >= this.storageLimit;
 });
 
+userSchema.virtual('accountAge').get(function() {
+    return Math.floor((new Date() - this.registrationDate) / (1000 * 60 * 60 * 24));
+});
+
+userSchema.virtual('isActive').get(function() {
+    return this.status === 'active';
+});
+
 // Indexes optimized for Azure Cosmos DB
+userSchema.index({ userId: 1 }, { unique: true });
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ username: 1 }, { unique: true });
 userSchema.index({ auth0Id: 1 }, { sparse: true, unique: true });
-userSchema.index({ userId: 1 });
-userSchema.index({ createdAt: -1 });
+userSchema.index({ registrationDate: -1 });
 userSchema.index({ lastLogin: -1 });
-userSchema.index({ isActive: 1, role: 1 });
+userSchema.index({ status: 1, role: 1 });
 userSchema.index({ authProvider: 1 });
-userSchema.index({ 'metadata.source': 1 });
 
 // Pre-save middleware
 userSchema.pre('save', async function(next) {
@@ -186,10 +206,10 @@ userSchema.pre('save', async function(next) {
             this.userId = this._id.toString();
         }
         
-        // Only hash the password if it has been modified (or is new) and not using Auth0
-        if (this.isModified('password') && this.password && this.authProvider !== 'auth0') {
+        // Hash password if modified and not using external auth
+        if (this.isModified('passwordHash') && this.passwordHash && this.authProvider === 'local') {
             const salt = await bcrypt.genSalt(12);
-            this.password = await bcrypt.hash(this.password, salt);
+            this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
         }
         
         next();
@@ -201,7 +221,7 @@ userSchema.pre('save', async function(next) {
 // Instance methods
 userSchema.methods.comparePassword = async function(candidatePassword) {
     try {
-        return await bcrypt.compare(candidatePassword, this.password);
+        return await bcrypt.compare(candidatePassword, this.passwordHash);
     } catch (error) {
         throw new Error('Password comparison failed');
     }
@@ -243,64 +263,14 @@ userSchema.statics.findByUsername = function(username) {
     return this.findOne({ username: username.toLowerCase() });
 };
 
-userSchema.statics.findByIdentifier = function(identifier) {
-    // Check if identifier is email or username
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
-    
-    if (isEmail) {
-        return this.findOne({ email: identifier.toLowerCase() });
-    } else {
-        return this.findOne({ username: identifier.toLowerCase() });
-    }
-};
-
-userSchema.statics.getActiveUsers = function() {
-    return this.find({ isActive: true });
-};
-
-userSchema.statics.getStorageStats = async function() {
-    return this.aggregate([
-        {
-            $group: {
-                _id: null,
-                totalUsers: { $sum: 1 },
-                activeUsers: {
-                    $sum: {
-                        $cond: [{ $eq: ['$isActive', true] }, 1, 0]
-                    }
-                },
-                totalStorageUsed: { $sum: '$storageUsed' },
-                averageStorageUsed: { $avg: '$storageUsed' },
-                totalMediaCount: { $sum: '$mediaCount' }
-            }
-        }
-    ]);
-};
-
-userSchema.statics.getUsersByStorageUsage = function(threshold = 0.8) {
-    return this.aggregate([
-        {
-            $addFields: {
-                storagePercentage: {
-                    $divide: ['$storageUsed', '$storageLimit']
-                }
-            }
-        },
-        {
-            $match: {
-                storagePercentage: { $gte: threshold }
-            }
-        },
-        {
-            $sort: { storagePercentage: -1 }
-        }
-    ]);
+userSchema.statics.findByUserId = function(userId) {
+    return this.findOne({ userId });
 };
 
 // Remove sensitive data when converting to JSON
 userSchema.methods.toJSON = function() {
     const userObject = this.toObject();
-    delete userObject.password;
+    delete userObject.passwordHash;
     delete userObject.__v;
     return userObject;
 };
