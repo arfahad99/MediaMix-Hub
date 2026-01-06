@@ -28,7 +28,7 @@ jobs:
 
       - name: Install dependencies (backend)
         working-directory: backend
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       # Optional: run tests if you have them configured inside backend/
       - name: Test (backend)
