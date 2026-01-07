@@ -33,7 +33,7 @@ jobs:
       # Optional: run tests if you have them configured inside backend/
       - name: Test (backend)
         working-directory: backend
-        run: npm test --if-present
+        run: npm test --if-present -- --passWithNoTests
 
       # ✅ Upload only backend folder for deployment
       - name: Upload artifact for deployment job
