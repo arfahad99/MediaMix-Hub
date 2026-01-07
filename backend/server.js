@@ -18,8 +18,6 @@ const errorHandler = require('./middleware/errorHandler');
 // Initialize Express app
 const app = express();
 
-// Connect to Azure Cosmos DB
-connectDB();
 
 // Security middleware
 app.use(helmet({
@@ -83,13 +81,34 @@ app.use('/api/*', (req, res) => {
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Start server
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-    console.log(`🚀 MediaMix Hub API server running on port ${PORT}`);
-    console.log(`📱 Environment: ${process.env.NODE_ENV}`);
-    console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-});
+
+(async () => {
+  try {
+    console.log("🔌 Connecting to Cosmos DB...");
+    await connectDB();
+    console.log("✅ Cosmos DB connected");
+
+    const server = app.listen(PORT, () => {
+      console.log(`🚀 MediaMix Hub API running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received. Shutting down gracefully...');
+      server.close(() => {
+        console.log('Process terminated');
+      });
+    });
+
+  } catch (error) {
+    console.error("❌ Failed to start application:");
+    console.error(error.message || error);
+    process.exit(1); // IMPORTANT: tells Azure startup failed
+  }
+})();
+
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
