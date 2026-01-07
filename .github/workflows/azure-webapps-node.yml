@@ -57,7 +57,7 @@ jobs:
           path: .
 
       - name: Show files before deploy
-        run: ls -la && echo "----" && ls -la backend
+        run: ls -la
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
