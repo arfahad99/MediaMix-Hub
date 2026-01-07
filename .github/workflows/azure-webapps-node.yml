@@ -67,5 +67,5 @@ jobs:
           package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
           package: backend
           
-- name: Show files before deploy
-  run: ls -la && ls -la backend
+        - name: Show files before deploy
+         run: ls -la && ls -la backend
